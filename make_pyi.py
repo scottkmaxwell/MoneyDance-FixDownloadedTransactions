@@ -2,6 +2,8 @@
 # coding=utf-8
 # Python script to be run in Moneydance to perform amazing feats of financial scripting
 
+# TODO: Handle overloaded methods
+
 import inspect
 import os.path
 
@@ -69,8 +71,10 @@ modules = (
     com.moneydance.apps.md.controller.sync,
     com.moneydance.apps.md.view.gui.sync,
 )
+module_names = set([m.__name__ for m in modules])
 
 root = os.path.dirname(__file__)
+write_folder = root  # os.path.join(root, 'for_ide')
 
 
 class MethodDetails:
@@ -85,7 +89,7 @@ class_info = {
     }
 }
 
-typing = 'Callable, Dict, Iterator, Iterable, List, Set, Sequence'
+typing = set('Callable, Dict, Iterator, Iterable, List, Set, Sequence'.split(', '))
 
 type_conversions = {
     'void': 'None',
@@ -97,13 +101,17 @@ type_conversions = {
     'int': 'int',
     'long': 'int',
     'java.math.BigInteger': 'int',
+    'java.lang.Exception': 'Exception',
     'java.lang.Integer': 'int',
+    'java.lang.Iterable': 'Iterable',
     'java.lang.Long': 'int',
     'java.lang.Object': 'object',
+    'java.lang.Runnable': 'Callable',
     'java.lang.String': 'str',
     'java.util.ArrayList': 'list',
     'java.util.HashMap': 'dict',
     'java.util.Hashtable': 'dict',
+    'java.util.Iterator': 'Iterator',
     'java.util.List': 'list',
     'java.util.Map': 'dict',
     'java.util.Set': 'set',
@@ -133,7 +141,8 @@ class ModulePYIWriter(object):
         classes = [(name, member) for name, member in inspect.getmembers(module) if inspect.isclass(member) and member.__module__ == module.__name__]
         self.classes_dict = {name: member for name, member in classes}
         self.classes = [member for name, member in classes]
-        self.class_bases = {}
+        self.class_local_bases = {}
+        self.class_external_bases = {}
         self.started_output_classes = set()
         self.completed_output_classes = set()
         self.builder = Builder()
@@ -150,9 +159,18 @@ class ModulePYIWriter(object):
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         if self.lines:
-            filename = self.module.__name__.replace('.', '_')
-            filename = os.path.join(os.path.dirname(__file__), '{}.pyi'.format(filename))
-            print 'Writing {}'.format(filename)
+            parts = self.module.__name__.split('.')
+            path = write_folder
+            if not os.path.exists(path):
+                os.makedirs(path)
+            for part in parts:
+                path = os.path.join(path, part)
+                if not os.path.exists(path):
+                    os.makedirs(path)
+                    with open(os.path.join(path, '__init__.pyi'), 'w'):
+                        pass
+            filename = os.path.join(path, '__init__.pyi')
+            # print 'Writing {}'.format(filename)
             with open(filename, 'w') as f:
                 if self.has_generic:
                     self.typings.add('TypeVar')
@@ -239,17 +257,24 @@ class ModulePYIWriter(object):
         if p and p.startswith('com.'):
             if p.startswith(self.module.__name__ + '.'):
                 type_name = p[len(self.module.__name__) + 1:]
+                if '.' in type_name:
+                    sub_module = type_name.rpartition('.')[0]
+                    if '{}.{}'.format(self.module.__name__, sub_module) in module_names:
+                        self.other_modules.add(sub_module)
+                        return type_name
+                    else:
+                        return "'{}'".format(type_name)
                 return type_name if type_name in self.completed_output_classes else "'{}'".format(type_name)
             else:
                 for m in modules:
-                    other_module, _, class_name = p.rpartition('.')
+                    other_module = p.rpartition('.')[0]
                     if m.__name__ == other_module:
-                        other_module = other_module.replace('.', '_')
                         self.other_modules.add(other_module)
-                        type_name = '{}.{}'.format(other_module, class_name)
-                        return type_name  # if modules.index(m) > modules.index(self.module) else "'{}'".format(type_name)
+                        return p  # if modules.index(m) > modules.index(self.module) else "'{}'".format(type_name)
         result = type_conversions.get(p)
         if result is not None:
+            if result in typing:
+                self.typings.add(result)
             return result
         if p == 'T':
             self.has_generic = True
@@ -287,32 +312,39 @@ class ModulePYIWriter(object):
             if isinstance(item, tuple):
                 cls, bases = item
                 if cls.__module__ == self.module.__name__:
-                    bases = tuple(filter(lambda x: x.__module__ == self.module.__name__, bases))
+                    bases = tuple(filter(lambda x: x.__module__ == self.module.__name__, item[1]))
                     if bases:
-                        self.class_bases[cls] = bases
+                        self.class_local_bases[cls] = bases
+                    bases = tuple(filter(lambda x: x.__module__ != self.module.__name__ and x.__name__ != 'Object', item[1]))
+                    if bases:
+                        self.class_external_bases[cls] = bases
             elif isinstance(item, list):
                 self.register_bases_in_module(item)
 
     def write_class(self, c):
         if c not in self.started_output_classes:
             self.started_output_classes.add(c)
-            bases = self.class_bases.get(c, [])
+            bases = self.class_local_bases.get(c, [])
             for base in bases:
                 self.write_class(base)
             name = c.__name__
-            self.build_class(name, c, bases)
+            self.build_class(name, c, bases, self.class_external_bases.get(c, []))
             self._write(self.builder.result)
             self.builder = Builder()
             self.completed_output_classes.add(name)
 
-    def build_class(self, class_name, c, bases=None):
-        # type: (str, type, list[type]) -> None
+    def build_class(self, class_name, c, bases=None, external_bases=None):
+        # type: (str, type, list[type], list[type]) -> None
 
+        bases = bases or []
+        external_bases = external_bases or []
         class_method_info = class_info.get(class_name, {})
 
         base = ''
-        if bases:
-            base = '(' + ', '.join(bc.__name__ for bc in bases) + ')'
+        if bases or external_bases:
+            internal_parts = [bc.__name__ for bc in bases]
+            external_parts = [self.convert_type('.'.join([bc.__module__, bc.__name__])) for bc in external_bases]
+            base = '(' + ', '.join(internal_parts + external_parts) + ')'
         self.add('class {}{}:'.format(class_name, base), post_indent=1)
         def_index = self.builder.index
 
@@ -378,26 +410,6 @@ class ModulePYIWriter(object):
                     staticer = '@staticmethod'
                 returner = ' -> {}'.format(self.parse_return_type(m))
 
-        if name == 'getAccountParameter_' or name == 'addParameters_' or name == 'calculate_':
-            print arg_list.method
-            print 'METHOD:'
-            for key in dir(arg_list.method):
-                if key.startswith('__'):
-                    continue
-                value = getattr(arg_list.method, key)
-                if str(value).startswith('<bound method'):
-                    continue
-                print '{}: {}'.format(key, value)
-
-            print '\nARG_LIST:'
-            for key in dir(arg_list):
-                if key.startswith('__'):
-                    continue
-                value = getattr(arg_list, key)
-                if str(value).startswith('<bound method'):
-                    continue
-                print '{}: {}'.format(key, value)
-            raise Exception('Done')
         if staticer:
             self.add(staticer)
         self.add('def {}({}{}){}: ...'.format(name, selfer, paramer, returner))
@@ -413,15 +425,15 @@ def main():
         with ModulePYIWriter(module) as writer:
             writer.write_all()
             all_unknown_types.update(writer.unknown_types)
-    with open(os.path.join(root, 'moneydance.pyi'), 'w') as f:
-        module_names = [module.__name__.replace('.', '_') for module in modules]
+    with open(os.path.join(write_folder, 'moneydance.pyi'), 'w') as f:
+        module_names = [module.__name__ for module in modules]
         for module in sorted(module_names):
             f.write('import {}\n'.format(module))
         f.write('\n')
-        f.write('moneydance = com_moneydance_apps_md_controller.Main()\n')
-        f.write('moneydance_data = com_infinitekind_moneydance_model.AccountBook()\n')
-        f.write('moneydance_ui = com_moneydance_apps_md_view_gui.MoneydanceGUI()\n')
-        f.write('moneybot = com_moneydance_apps_md_view_gui_bot.PythonInterface()\n')
+        f.write('moneydance = com.moneydance.apps.md.controller.Main()\n')
+        f.write('moneydance_data = com.infinitekind.moneydance.model.AccountBook()\n')
+        f.write('moneydance_ui = com.moneydance.apps.md.view.gui.MoneydanceGUI()\n')
+        f.write('moneybot = com.moneydance.apps.md.view.gui.bot.PythonInterface()\n')
 
     if all_unknown_types:
         print('Unknown:')
