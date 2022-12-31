@@ -24,6 +24,7 @@ class ClearedStatus(object):
     CLEARED = 'CLEARED'
     RECONCILING = 'RECONCILING'
     UNRECONCILED = 'UNRECONCILED'
+    ALL = (CLEARED, RECONCILING, UNRECONCILED)
 
 
 # AccountType = Account.AccountType
@@ -38,6 +39,7 @@ class AccountType(object):
     LOAN = 'LOAN'
     ROOT = 'ROOT'
     SECURITY = 'SECURITY'
+    ALL = (ASSET, BANK, CREDIT_CARD, EXPENSE, INCOME, INVESTMENT, LIABILITY, LOAN, ROOT, SECURITY)
 
 
 # BalanceType = Account.BalanceType
@@ -47,6 +49,7 @@ class BalanceType(object):
     CURRENT = 'CURRENT'
     NORMAL = 'NORMAL'
     UNCONFIRMED = 'UNCONFIRMED'
+    ALL = (CLEARED, CONFIRMED, CURRENT, NORMAL, UNCONFIRMED)
 
 
 prefix_to_strip = ('SQ *', 'TST* ', 'PY *', 'SP * ', 'EV* ', 'CKE*')
@@ -89,15 +92,6 @@ def find_account(account):
 
 
 class Transaction(object):
-    """
-                if txn != txn.getParentTxn():
-                continue
-            if not txn.isNew():
-                continue
-            account_name = str(txn.getAccount())
-
-    """
-
     _category = None
     _original_category = None
     _description = None
@@ -252,6 +246,12 @@ class Transaction(object):
             )
 
 
+class FixerError(RuntimeError):
+    def __init__(self, message):
+        super(FixerError, self).__init__()
+        self.message = message
+
+
 class Fixer(object):
     def __init__(self, replacement, exact_match="", starts_with="",
                  memo_contains="", amount=0.0, amount_below=0.0,
@@ -269,6 +269,8 @@ class Fixer(object):
         self.amount_above = float(amount_above) if amount_above else 0.0
         self.category = find_account(category) if category else None
         self.confirm = not skip_confirm
+        if category and not self.category:
+            raise FixerError('Could not find category "{}"'.format(category))
 
     def check_replacement(self, txn, check_starts_with=True):
         # type: (Transaction, bool) -> bool
@@ -353,8 +355,11 @@ class FixerCollection(object):
             field_names = lines[0].split(',')
             for line in lines[1:]:
                 kwargs = dict(zip(field_names, line.split(',')))
-                # print(kwargs)
-                cls.create_fixer(**kwargs)
+                try:
+                    cls.create_fixer(**kwargs)
+                except FixerError as e:
+                    print("ERROR: {}".format(line))
+                    print("     - {}".format(e.message))
 
             cls._loaded.add(path)
 
@@ -362,9 +367,13 @@ class FixerCollection(object):
     def add(cls, fixer, account_type="", account_name=""):
         # type: (Fixer, str, str) -> None
         if account_name:
+            if not find_account(account_name):
+                raise FixerError("Unknown account: {}".format(account_name))
             group = cls._fixer_groups_by_account_name.setdefault(account_name.upper(),
                                                                  FixerGroup())
         elif account_type:
+            if account_type not in AccountType.ALL:
+                raise FixerError("Unknown account type: {}".format(account_type))
             group = cls._fixer_groups_by_account_type.setdefault(account_type,
                                                                  FixerGroup())
         else:
