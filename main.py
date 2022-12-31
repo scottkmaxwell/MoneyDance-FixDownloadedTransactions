@@ -73,11 +73,19 @@ def remove_extra_spaces(s):
     return " ".join(part.strip() for part in s.split(" ") if part.strip())
 
 
+_found_accounts = {}  # Dict[str, Account]
+
+
 def find_account(account):
     # type: (str) -> Optional[Account]
     if not account:
         return None
-    return moneydance.getCurrentAccountBook().getRootAccount().getAccountByName(account)
+    result = _found_accounts.get(account)
+    if result:
+        return result
+    result = moneydance.getCurrentAccountBook().getRootAccount().getAccountByName(account)
+    _found_accounts[account] = result
+    return result
 
 
 class Transaction(object):
