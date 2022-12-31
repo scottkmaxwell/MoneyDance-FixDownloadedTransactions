@@ -544,8 +544,16 @@ class FixDownloadedTransactionsExtension(object):
     # invoke(eventstring) is called when we receive a callback for the
     # feature that we registered in the initialize method
     def invoke(self, eventString=""):
-        self.myContext.setStatus(
-            "Python extension received command: %s" % eventString)
+        # type: (str) -> None
+        FixerCollection.load(CSV_FILE_NAME)
+        # self.test_fix_transactions(AccountType.BANK, AccountType.CREDIT_CARD)
+        self.fix_transactions(AccountType.BANK, AccountType.CREDIT_CARD)
+
+    def set_status(self, message):
+        # type: (str) -> None
+        if self.myContext:
+            self.myContext.setStatus(message)
+        print(message)
 
     def show_accounts(self):  # type: () -> None
         for account_type in sorted(self.account_names_by_type):
@@ -563,6 +571,10 @@ class FixDownloadedTransactionsExtension(object):
         all_parented_transactions = list(
             self.get_unreconciled_for_account_types(*account_types))
         all_parented_transactions.sort(key=lambda x: -x.dateint)
+        if not all_parented_transactions:
+            self.set_status("No new transactions")
+            return
+        self.set_status("Analyzing {} transactions".format(len(all_parented_transactions)))
         counter = 0
         fix_count = 0
         no_change_required = 0
@@ -589,8 +601,7 @@ class FixDownloadedTransactionsExtension(object):
                     print("- {} ({})".format(desc.description, desc.count))
                     for o in sorted(desc.outputs):
                         print("  - {}".format(o))
-        print("Fixed {} of {} ({}%)".format(fix_count, counter,
-                                            (fix_count * 100 / counter)))
+        self.set_status("Fixed {} of {} ({}%)".format(fix_count, counter, (fix_count * 100 / counter)))
         if no_change_required:
             print("{} were unconfirmed but no change required".format(no_change_required))
 
@@ -638,19 +649,18 @@ class FixDownloadedTransactionsExtension(object):
         return "FixDownloadedTransactions"
 
 
-# setting the "moneydance_extension" variable tells Moneydance to register
-# that object as an extension
-# moneydance_extension = FixDownloadedTransactionsExtension.get_instance()
-
-
 def immediate_mode():
     o = FixDownloadedTransactionsExtension.get_instance()
-    FixerCollection.load(CSV_FILE_NAME)
+    o.invoke()
+    # FixerCollection.load(CSV_FILE_NAME)
     # o.show_accounts()
     # o.test_fix_transactions(AccountType.BANK)
     # o.test_fix_transactions(AccountType.CREDIT_CARD)
     # o.test_fix_transactions(AccountType.BANK, AccountType.CREDIT_CARD)
-    o.fix_transactions(AccountType.BANK, AccountType.CREDIT_CARD)
+    # o.fix_transactions(AccountType.BANK, AccountType.CREDIT_CARD)
 
 
-immediate_mode()
+# setting the "moneydance_extension" variable tells Moneydance to register
+# that object as an extension
+moneydance_extension = FixDownloadedTransactionsExtension.get_instance()
+# immediate_mode()
