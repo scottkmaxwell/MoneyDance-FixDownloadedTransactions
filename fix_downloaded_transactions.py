@@ -16,6 +16,12 @@ try:
 except ImportError:
     pass
 
+# Change this to True to install as an extension. Then you will need to choose
+# Extensions -> Fix Downloaded Transactions from the menu.
+# Since this extension is not signed, it must be installed whenever you restart
+# MoneyDance, so you may not find this very useful.
+INSTALL_EXTENSION = False
+
 # Location of CSV files with replacements.
 # Note: At the time of this writing, all CSVs must be in your Downloads folder
 #       due to security issues.
@@ -705,7 +711,7 @@ def immediate_mode():
     # o.fix_transactions(AccountType.BANK, AccountType.CREDIT_CARD)
 
 
-# setting the "moneydance_extension" variable tells Moneydance to register
-# that object as an extension
-moneydance_extension = FixDownloadedTransactionsExtension.get_instance()
-# immediate_mode()
+if INSTALL_EXTENSION:
+    moneydance_extension = FixDownloadedTransactionsExtension.get_instance()
+else:
+    immediate_mode()
