@@ -16,7 +16,34 @@ try:
 except ImportError:
     pass
 
-CSV_FILE_NAME = 'Downloads/MoneyDance.csv'
+# Location of CSV files with replacements.
+# Note: At the time of this writing, all CSVs must be in your Downloads folder
+#       due to security issues.
+CSV_FILE_NAMES = ["Downloads/MoneyDance.csv"]
+
+# Common unicode patterns used by spreadsheets with ASCII replacements
+UNICODE_REPLACEMENTS = {
+    "\xe2\x80\x99": "'",
+}
+
+# Many credit card descriptions begin with a prefix and a "*", such as "SQ *"
+# for Square. List all such prefixes that you would like to automatically
+# remove before any further processing. Do not include spaces or "*".
+PREFIXES_TO_STRIP = {'SQ', 'TST', 'PY', 'SP', 'EV', 'CKE'}
+
+# The following fields are required in each CSV file, and must be in the first
+# row of the CSV. They can be in any order.
+REQUIRED_FIELDS = {"account_type",
+                   "account_name",
+                   "category",
+                   "replacement",
+                   "exact_match",
+                   "starts_with",
+                   "memo_contains",
+                   "amount",
+                   "amount_below",
+                   "amount_above",
+                   "skip_confirm"}
 
 
 # ClearedStatus = AbstractTxn.ClearedStatus
@@ -52,28 +79,35 @@ class BalanceType(object):
     ALL = (CLEARED, CONFIRMED, CURRENT, NORMAL, UNCONFIRMED)
 
 
-prefix_to_strip = ('SQ *', 'TST* ', 'PY *', 'SP * ', 'EV* ', 'CKE*')
-
-
 def strip_prefixes(s):
     # type: (str) -> str
-    if '*' in s:
-        for prefix in prefix_to_strip:
-            if s.startswith(prefix):
-                return s[len(prefix):]
+    """Remove common description prefixes."""
+    prefix, _, message = s.partition("*")
+    if message and prefix.strip() in PREFIXES_TO_STRIP:
+        return message.strip()
     return s
 
 
 def first_word(s):
     # type: (str) -> str
-    s = s.upper()
+    """Get the first word to use as a key."""
     for separator in (" ", "*", ".", "-", "/"):
         s = s.partition(separator)[0]
-    return s
+    return s.upper()
 
 
 def remove_extra_spaces(s):
+    # type: (str) -> str
+    """Replace series of spaces with single spaces."""
     return " ".join(part.strip() for part in s.split(" ") if part.strip())
+
+
+def fix_unicode(s):
+    # type: (str) -> str
+    """Replace unicode patterns commonly used by spreadsheets with ASCII."""
+    for uni, replacement in UNICODE_REPLACEMENTS.items():
+        s = s.replace(uni, replacement)
+    return s
 
 
 _found_accounts = {}  # Dict[str, Account]
@@ -92,6 +126,7 @@ def find_account(account):
 
 
 class Transaction(object):
+    """Wrapper for the Java transaction object that makes it more Pythonic."""
     _category = None
     _original_category = None
     _description = None
@@ -153,6 +188,7 @@ class Transaction(object):
 
     @property
     def online_description(self):
+        # type: () -> str
         return strip_prefixes(self._txn.getOriginalOnlineTxn().getName())
 
     @property
@@ -339,20 +375,32 @@ class FixerCollection(object):
     _fixer_groups_by_account_type = {}  # type: Dict[str, FixerGroup]
     _fixer_groups_by_account_name = {}  # type: Dict[str, FixerGroup]
     _global_fixers = FixerGroup()
-    _loaded = set()  # type: Set[str]
 
     @classmethod
-    def load(cls, path):
-        if path not in cls._loaded:
+    def load(cls, *paths):
+        # type: (str) -> None
+
+        # Start fresh
+        cls._fixer_groups_by_account_type = {}
+        cls._fixer_groups_by_account_name = {}
+        cls._global_fixers = FixerGroup()
+
+        for path in paths:
             path = os.path.join(os.getcwd(), path)
             if not os.path.exists(path):
                 print("No data file found at {}".format(os.path.realpath(path)))
-                return
+                continue
             print("Loading {}".format(os.path.realpath(path)))
             with open(path, 'r') as f:
                 lines = [line.strip().replace('\xe2\x80\x99', "'") for line in
                          f]
             field_names = lines[0].split(',')
+            missing_fields = REQUIRED_FIELDS - set(field_names)
+            if missing_fields:
+                print("CSV is missing the following required fields:")
+                for field in sorted(missing_fields):
+                    print("- {}".format(field))
+                continue
             for line in lines[1:]:
                 kwargs = dict(zip(field_names, line.split(',')))
                 try:
@@ -360,8 +408,6 @@ class FixerCollection(object):
                 except FixerError as e:
                     print("ERROR: {}".format(line))
                     print("     - {}".format(e.message))
-
-            cls._loaded.add(path)
 
     @classmethod
     def add(cls, fixer, account_type="", account_name=""):
@@ -533,7 +579,7 @@ class FixDownloadedTransactionsExtension(object):
         self.myContext = extension_context
         self.myExtensionObject = extension_object
         self._init_data()
-        FixerCollection.load(CSV_FILE_NAME)
+        FixerCollection.load(*CSV_FILE_NAMES)
 
         # here we register ourselves with a menu item to invoke a feature
         # (ignore the button and icon mentions in the docs)
@@ -543,10 +589,9 @@ class FixDownloadedTransactionsExtension(object):
 
     # invoke(eventstring) is called when we receive a callback for the
     # feature that we registered in the initialize method
-    def invoke(self, eventString=""):
+    def invoke(self, _eventString=""):
         # type: (str) -> None
-        FixerCollection.load(CSV_FILE_NAME)
-        # self.test_fix_transactions(AccountType.BANK, AccountType.CREDIT_CARD)
+        FixerCollection.load(*CSV_FILE_NAMES)
         self.fix_transactions(AccountType.BANK, AccountType.CREDIT_CARD)
 
     def set_status(self, message):
@@ -652,7 +697,7 @@ class FixDownloadedTransactionsExtension(object):
 def immediate_mode():
     o = FixDownloadedTransactionsExtension.get_instance()
     o.invoke()
-    # FixerCollection.load(CSV_FILE_NAME)
+    # FixerCollection.load(*CSV_FILE_NAMES)
     # o.show_accounts()
     # o.test_fix_transactions(AccountType.BANK)
     # o.test_fix_transactions(AccountType.CREDIT_CARD)
