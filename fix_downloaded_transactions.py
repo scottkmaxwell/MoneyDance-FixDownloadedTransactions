@@ -35,7 +35,7 @@ UNICODE_REPLACEMENTS = {
 # Many credit card descriptions begin with a prefix and a "*", such as "SQ *"
 # for Square. List all such prefixes that you would like to automatically
 # remove before any further processing. Do not include spaces or "*".
-PREFIXES_TO_STRIP = {'SQ', 'TST', 'PY', 'SP', 'EV', 'CKE'}
+PREFIXES_TO_STRIP = {'CKE', 'EV', 'PY', 'SP', 'SQ', 'TST'}
 
 # The following fields are required in each CSV file, and must be in the first
 # row of the CSV. They can be in any order.

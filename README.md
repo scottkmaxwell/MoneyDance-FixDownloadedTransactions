@@ -78,6 +78,18 @@ match.
 All matching is case-insensitive. So `ACH Credit` will also match
 `ACH CREDIT` and `ach credit`.
 
+## Prefixes
+
+Many credit card descriptions begin with a prefix and an `*`, such as `SQ *`
+for Square. The code will automatically remove many of these for you, but you
+can add to the list by editing `fix_downloaded_transactions.py`. List all
+prefixes that you would like to automatically remove. Do not include spaces or
+`*`. Here is the default list:
+
+```python
+PREFIXES_TO_STRIP = {'CKE', 'EV', 'PY', 'SP', 'SQ', 'TST'}
+```
+
 ## Required(-ish) Fields
 
 ### `account_type` and `account_name`
