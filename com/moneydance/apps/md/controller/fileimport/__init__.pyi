@@ -7,7 +7,7 @@ import com.moneydance.apps.md.view
 
 
 class FileImportSpec:
-    FILE_ENCODINGS = '[UTF-8, ISO-8859-1, US-ASCII, UTF-16, UTF-16LE, UTF-16BE, ISO-8859-8]'
+    FILE_ENCODINGS = '[UTF-8, ISO-8859-1, US-ASCII, UTF-16, UTF-16LE, UTF-16BE]'
     
     def __init__(self, s: str, c: com.infinitekind.moneydance.online.OnlineBankingUI): ...
     

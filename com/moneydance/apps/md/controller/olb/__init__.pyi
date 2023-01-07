@@ -1,5 +1,8 @@
 from typing import Dict, List
+import com.infinitekind.moneydance.model
+import com.infinitekind.moneydance.online
 import com.moneydance.apps.md.controller
+import com.moneydance.apps.md.view.gui
 
 
 class ChunkedInputStream('java.io.InputStream'):
@@ -87,8 +90,8 @@ class HTTPURLConnectionHelper:
     
     
 class Header:
-    name = '<reflected field public java.lang.String com.moneydance.apps.md.controller.olb.Header.name at 0xa90>'
-    value = '<reflected field public java.lang.String com.moneydance.apps.md.controller.olb.Header.value at 0xa91>'
+    name = '<reflected field public java.lang.String com.moneydance.apps.md.controller.olb.Header.name at 0xafc>'
+    value = '<reflected field public java.lang.String com.moneydance.apps.md.controller.olb.Header.value at 0xafd>'
     
     def __init__(self, header: 'Header'): ...
     
@@ -382,6 +385,29 @@ class MDCookie:
     def toString(self) -> str: ...
     
     
+class MDPlusURLs('java.lang.Enum'):
+    EXCHANGE_SIG_FOR_TOKEN = 'EXCHANGE_SIG_FOR_TOKEN'
+    GET_NONCE = 'GET_NONCE'
+    KEY_STATUS_BASE = 'KEY_STATUS_BASE'
+    PLAID_LINK = 'PLAID_LINK'
+    REGISTER_PUBKEY = 'REGISTER_PUBKEY'
+    REMOVE_KEY_PAYLOAD = 'REMOVE_KEY_PAYLOAD'
+    SET_TOKEN_COOKIE = 'SET_TOKEN_COOKIE'
+    SHOW_ACCOUNT = 'SHOW_ACCOUNT'
+    
+    def __init__(self): ...
+    
+    def getURI(self) -> 'java.net.URI': ...
+    
+    def getURL(self) -> str: ...
+    
+    @staticmethod
+    def valueOf(s: str) -> 'MDPlusURLs': ...
+    
+    @staticmethod
+    def values() -> List['MDPlusURLs']: ...
+    
+    
 class MoneybotURLStreamHandlerFactory('java.net.URLStreamHandlerFactory'):
     DEBUG = False
     DEBUG_PROXY = None
@@ -407,5 +433,59 @@ class MoneybotURLStreamHandlerFactory('java.net.URLStreamHandlerFactory'):
     def removeCollectionListener(self, httpCollectionListener: HttpCollectionListener) -> None: ...
     
     def setDefaultDownloadHandler(self, httpCollectionListener: HttpCollectionListener) -> None: ...
+    
+    
+class OLBConnection:
+    DEBUG = False
+    DEBUG_MESSAGES = False
+    
+    def __init__(self): ...
+    
+    def changePIN(self, c: com.infinitekind.moneydance.online.OFXAuthInfo, s: str) -> None: ...
+    
+    def createNewMail(self, c: com.moneydance.apps.md.view.gui.MDAccountProxy, c2: com.infinitekind.moneydance.model.OnlineMail) -> None: ...
+    
+    def createPayee(self, c: com.infinitekind.moneydance.model.OnlineAccountProxy, c2: com.infinitekind.moneydance.model.OnlinePayee) -> None: ...
+    
+    def createPayment(self, c: com.infinitekind.moneydance.model.OnlineAccountProxy, c2: com.infinitekind.moneydance.model.OnlinePayment, c3: com.infinitekind.moneydance.model.OnlinePayee) -> com.infinitekind.moneydance.model.OnlinePayment: ...
+    
+    def editPayment(self, c: com.infinitekind.moneydance.model.OnlineAccountProxy, c2: com.infinitekind.moneydance.model.OnlinePayment) -> com.infinitekind.moneydance.model.OnlinePayment: ...
+    
+    def getFIID(self) -> str: ...
+    
+    def getTransactions(self, c: com.infinitekind.moneydance.model.OnlineAccountProxy) -> None: ...
+    
+    def modifyPayee(self, c: com.infinitekind.moneydance.model.OnlineAccountProxy, c2: com.infinitekind.moneydance.model.OnlinePayee) -> None: ...
+    
+    def refreshPaymentList(self, c: com.infinitekind.moneydance.model.OnlineAccountProxy) -> None: ...
+    
+    def refreshServiceInfo(self) -> None: ...
+    
+    def removePayee(self, c: com.infinitekind.moneydance.model.OnlineAccountProxy, c2: com.infinitekind.moneydance.model.OnlinePayee) -> None: ...
+    
+    def removePayment(self, c: com.infinitekind.moneydance.model.OnlineAccountProxy, c2: com.infinitekind.moneydance.model.OnlinePayment) -> None: ...
+    
+    def setDebugWriter(self, j: 'java.io.Writer') -> None: ...
+    
+    def syncMail(self, c: com.moneydance.apps.md.view.gui.MDAccountProxy) -> None: ...
+    
+    def syncPayeeList(self, c: com.infinitekind.moneydance.model.OnlineAccountProxy) -> None: ...
+    
+    def syncPaymentList(self, c: com.infinitekind.moneydance.model.OnlineAccountProxy) -> None: ...
+    
+    def updateAccountList(self) -> bool: ...
+    
+    
+class OnlineConnectionMode('java.lang.Enum'):
+    BANKING = 'BANKING'
+    BILLPAY = 'BILLPAY'
+    
+    def __init__(self): ...
+    
+    @staticmethod
+    def valueOf(s: str) -> 'OnlineConnectionMode': ...
+    
+    @staticmethod
+    def values() -> List['OnlineConnectionMode']: ...
     
     

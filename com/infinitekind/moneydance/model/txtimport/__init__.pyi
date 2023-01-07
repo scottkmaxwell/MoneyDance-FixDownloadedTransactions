@@ -93,7 +93,7 @@ class ImportFieldType('java.lang.Enum'):
     
     
 class TabularTextImportSpec:
-    IMPORTABLE_ACCOUNTS_FILTER = 'com.infinitekind.moneydance.model.txtimport.TabularTextImportSpec$1@d25b3bb'
+    IMPORTABLE_ACCOUNTS_FILTER = 'com.infinitekind.moneydance.model.txtimport.TabularTextImportSpec$1@678fa8f8'
     
     def __init__(self, c: com.infinitekind.moneydance.model.AccountBook, c2: com.infinitekind.moneydance.online.OnlineBankingUI): ...
     

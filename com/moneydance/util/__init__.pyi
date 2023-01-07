@@ -178,7 +178,16 @@ class Platform:
     def __init__(self): ...
     
     @staticmethod
+    def architecture() -> str: ...
+    
+    @staticmethod
+    def isArm() -> bool: ...
+    
+    @staticmethod
     def isBigSurOrLater() -> bool: ...
+    
+    @staticmethod
+    def isIntel() -> bool: ...
     
     @staticmethod
     def isMac() -> bool: ...
@@ -195,6 +204,26 @@ class Platform:
     @staticmethod
     def isWindows() -> bool: ...
     
+    
+    class Architecture:
+        arm32 = 'arm32'
+        arm64 = 'arm64'
+        intel32 = 'intel32'
+        intel64 = 'intel64'
+        unknown = 'unknown'
+        
+        def __init__(self): ...
+        
+        @staticmethod
+        def fromPropertyString(s: str) -> str: ...
+        
+        @staticmethod
+        def valueOf(s: str) -> str: ...
+        
+        @staticmethod
+        def values() -> List[str]: ...
+        
+        
     
 class Sorting:
     def __init__(self): ...
@@ -232,7 +261,7 @@ class StringUtils(com.infinitekind.util.StringUtils):
 class UiUtil:
     DLG_HGAP = 10
     DLG_VGAP = 8
-    HGAP = 6
+    HGAP = 8
     LABEL_COLON = u'labelColon'
     TEXT_ANTIALIAS_HINT = 'Antialiased text mode'
     VGAP = 4

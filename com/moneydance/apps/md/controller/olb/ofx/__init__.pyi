@@ -1,6 +1,7 @@
 from typing import Dict, List
 import com.infinitekind.moneydance.model
 import com.infinitekind.moneydance.online
+import com.moneydance.apps.md.controller.olb
 
 
 class FIProfile:
@@ -21,7 +22,7 @@ class OFXAuthInterface:
     def authenticateUser(self, c: com.infinitekind.moneydance.model.OnlineService, s: str, c2: com.infinitekind.moneydance.model.OnlineAccountProxy) -> com.infinitekind.moneydance.online.OFXAuthInfo: ...
     
     
-class OFXConnection:
+class OFXConnection(com.moneydance.apps.md.controller.olb.OLBConnection):
     DEBUG = False
     DEBUG_MESSAGES = False
     DEFAULT_APP_ID = u'QWIN'
@@ -33,13 +34,13 @@ class OFXConnection:
     
     def changePIN(self, c: com.infinitekind.moneydance.online.OFXAuthInfo, s: str) -> None: ...
     
-    def createNewMail(self, c: com.infinitekind.moneydance.model.OnlineAccountProxy, c2: com.infinitekind.moneydance.model.OnlineMail) -> None: ...
-    
     def createPayee(self, c: com.infinitekind.moneydance.model.OnlineAccountProxy, c2: com.infinitekind.moneydance.model.OnlinePayee) -> None: ...
     
     def createPayment(self, c: com.infinitekind.moneydance.model.OnlineAccountProxy, c2: com.infinitekind.moneydance.model.OnlinePayment, c3: com.infinitekind.moneydance.model.OnlinePayee) -> com.infinitekind.moneydance.model.OnlinePayment: ...
     
     def editPayment(self, c: com.infinitekind.moneydance.model.OnlineAccountProxy, c2: com.infinitekind.moneydance.model.OnlinePayment) -> com.infinitekind.moneydance.model.OnlinePayment: ...
+    
+    def getFIID(self) -> str: ...
     
     def getTransactions(self, c: com.infinitekind.moneydance.model.OnlineAccountProxy) -> None: ...
     
@@ -58,11 +59,7 @@ class OFXConnection:
     
     def removePayment(self, c: com.infinitekind.moneydance.model.OnlineAccountProxy, c2: com.infinitekind.moneydance.model.OnlinePayment) -> None: ...
     
-    def setDebugWriter(self, j: 'java.io.Writer') -> None: ...
-    
     def setStartDateAdjustment(self, i: int) -> None: ...
-    
-    def syncMail(self, c: com.infinitekind.moneydance.model.OnlineAccountProxy) -> None: ...
     
     def syncPayeeList(self, c: com.infinitekind.moneydance.model.OnlineAccountProxy) -> None: ...
     

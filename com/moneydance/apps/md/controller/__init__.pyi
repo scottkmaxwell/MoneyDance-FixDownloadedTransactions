@@ -1,4 +1,4 @@
-from typing import Callable, Iterator, List, Sequence, Set
+from typing import Callable, Dict, Iterator, List, Sequence, Set
 import com.infinitekind.moneydance.model
 import com.infinitekind.util
 import com.moneydance.apps.md.extensionapi
@@ -37,8 +37,6 @@ class AccountBookWrapper:
     def getEncryptionLevel(self) -> str: ...
     
     def getPublicMetaInfo(self) -> com.infinitekind.util.StreamTable: ...
-    
-    def getReportSpecManager(self) -> com.infinitekind.moneydance.model.ReportSpecManager: ...
     
     def getSyncEncryptionPassword(self) -> str: ...
     
@@ -351,7 +349,7 @@ class Common:
     ATTACHMENT_TAG_PREFIX = u'attach.'
     AUTO_SAVE_INTERVAL_IN_SECONDS = '20'
     COUNTRY_NAME_TABLE = "{u'CAN': u'Canada', u'CHE': u'Switzerland', u'USA': u'United States of America', u'ESP': u'Spain', u'FRA': u'France', u'DEU': u'Germany', u'GBR': u'Great Britain', u'ITA': u'Italy', u'NLD': u'Netherlands', u'BEL': u'Belgium'}"
-    DEFAULT_SECURITY_DEC_PLACES = 4
+    DEFAULT_SECURITY_DEC_PLACES = 5
     EXTENSION_LIST_DEBUG_URL = u'https://infinitekind.com/app/md.debug/extensions.dct'
     EXTENSION_LIST_URL = u'https://infinitekind.com/app/md/extensions.dct'
     FMODULE_URI_PREFIX = u'moneydance:fmodule:'
@@ -572,7 +570,11 @@ class FullAccountList:
     
     
 class LicenseInfo:
+    MDPLUS_LICENSE_PREFIX = u'MDP:'
+    
     def __init__(self, main: 'Main'): ...
+    
+    def getKeyVersion(self) -> 'LicenseKeyVersion': ...
     
     def getLicenseKey(self) -> str: ...
     
@@ -586,6 +588,8 @@ class LicenseInfo:
     def main(list: List[str]) -> None: ...
     
     def setRegistrationKey(self, s: str) -> bool: ...
+    
+    def verifyWithServer(self, s: str) -> str: ...
     
     
     class LicenseStatus:
@@ -603,6 +607,35 @@ class LicenseInfo:
         def values() -> List[str]: ...
         
         
+    
+class LicenseKeyVersion('java.lang.Enum'):
+    v2004 = 'v2004'
+    v2008 = 'v2008'
+    v2010 = 'v2010'
+    v2011 = 'v2011'
+    v2014 = 'v2014'
+    v2015 = 'v2015'
+    v2017 = 'v2017'
+    v2019 = 'v2019'
+    v2021 = 'v2021'
+    v2022 = 'v2022'
+    
+    def __init__(self): ...
+    
+    def getKeyHash(self) -> List[int]: ...
+    
+    def getPriorUpgradeableVersion(self) -> 'LicenseKeyVersion': ...
+    
+    def getVersionID(self) -> int: ...
+    
+    @staticmethod
+    def valueOf(s: str) -> 'LicenseKeyVersion': ...
+    
+    @staticmethod
+    def values() -> List['LicenseKeyVersion']: ...
+    
+    def verifyKey(self, s: str, b: bool) -> bool: ...
+    
     
 class LocalStorageCipher:
     def __init__(self, j: 'javax.crypto.SecretKey', s: str): ...
@@ -649,6 +682,106 @@ class MDException(Exception):
     def getOriginalError(self) -> 'java.lang.Throwable': ...
     
     
+class MDPlus:
+    def __init__(self): ...
+    
+    def getLicenseForBook(self, c: com.infinitekind.moneydance.model.AccountBook, b: bool) -> str: ...
+    
+    @staticmethod
+    def singleton() -> 'MDPlus': ...
+    
+    
+    class MDPlusLicense:
+        def __init__(self): ...
+        
+        def deleteKeyPayload(self, s: str) -> None: ...
+        
+        def getAuthenticatedManageAccountsURL(self) -> str: ...
+        
+        def getAuthenticatedToken(self) -> str: ...
+        
+        def getCreatedDate(self) -> int: ...
+        
+        def getCustomerEmail(self) -> str: ...
+        
+        def getKeyID(self) -> str: ...
+        
+        def getOpenPlaidLinkURL(self) -> str: ...
+        
+        def getPendingCustomerEmail(self) -> str: ...
+        
+        def getPlaidRelinkURL(self, s: str) -> str: ...
+        
+        def getPubkey(self) -> 'java.security.PublicKey': ...
+        
+        def getRefreshDate(self) -> int: ...
+        
+        def getSignupStatusWithRefreshing(self) -> str: ...
+        
+        def getSignupStatusWithoutRefresh(self) -> str: ...
+        
+        def getStatusLastUpdated(self) -> int: ...
+        
+        def getSubscriptionStatusURL(self) -> str: ...
+        
+        def getUserID(self) -> str: ...
+        
+        def interruptPendingRegistration(self) -> None: ...
+        
+        def isActivated(self) -> bool: ...
+        
+        def isSubscriptionActive(self) -> bool: ...
+        
+        def refreshStatusIfNecessary(self) -> str: ...
+        
+        def refreshStatusNow(self) -> str: ...
+        
+        def registerWithEmail(self, s: str, s2: str) -> bool: ...
+        
+        def signBytes(self, list: List[int]) -> List[int]: ...
+        
+        
+    class SignupStatus:
+        ACTIVATED = 'ACTIVATED'
+        CONFIRMED = 'CONFIRMED'
+        EXPIRED = 'EXPIRED'
+        NONE = 'NONE'
+        PENDING = 'PENDING'
+        SUBSCRIBED = 'SUBSCRIBED'
+        UNKNOWN = 'UNKNOWN'
+        
+        def __init__(self): ...
+        
+        @staticmethod
+        def valueOf(s: str) -> str: ...
+        
+        @staticmethod
+        def values() -> List[str]: ...
+        
+        
+    class Status:
+        def __init__(self): ...
+        
+        def getKeyPayloads(self) -> Dict[str,List[int]]: ...
+        
+        def getMessage(self) -> str: ...
+        
+        def getPlaidCountries(self) -> List[str]: ...
+        
+        def getPlaidProducts(self) -> List[str]: ...
+        
+        def getStatus(self) -> str: ...
+        
+        def getUserPayloads(self) -> Dict[str,List[int]]: ...
+        
+        def isActivated(self) -> bool: ...
+        
+        def isSubscriptionActive(self) -> bool: ...
+        
+        def wasSuccessful(self) -> bool: ...
+        
+        
+    
 class MDWorker:
     def __init__(self, mDWorkerManager: 'MDWorkerManager'): ...
     
@@ -693,25 +826,16 @@ class StatusMonitor:
     
 class Main(StatusMonitor, FeatureModuleContext, com.moneydance.security.SecretKeyCallback, 'com.moneydance.awt.JLinkListener'):
     BETA_FEATURES = False
-    CURRENT_BUILD = 3069
+    CURRENT_BUILD = 4084
     CURRENT_STATUS = u''
-    CURRENT_VERSION = u'2021.1'
+    CURRENT_VERSION = u'2022.3'
     DEBUG = False
-    DESCRIPTIVE_NAME = u'Moneydance 2021.1 (3069)'
+    DESCRIPTIVE_NAME = u'Moneydance 2022.3 (4084)'
     EXEC_MODE_APP = 2
     EXEC_MODE_APPLET = 1
     FILE_EXTENSION = u'md'
     MINIMUM_EXTENSION_VERSION_FOR_MD2015 = 1000
-    k1 = "array('b', [101, 99, 98, 99, 98, 100, 109, 103, 119, 110, 111, 109, 115])"
-    k2 = "array('b', [99, 97, 102, 101, 98, 101, 101, 102, 102, 101, 101, 100, 120])"
-    k3 = "array('b', [49, 100, 48, 56, 52, 97, 98, 51, 54, 57, 101, 53, 56])"
-    k4 = "array('b', [98, 97, 112, 76, 51, 119, 78, 81, 114, 98, 50, 66, 118])"
-    k5 = "array('b', [99, 97, 102, 101, 98, 51, 105, 102, 122, 50, 116, 120, 117])"
-    k6 = "array('b', [89, 104, 56, 120, 48, 116, 49, 73, 108, 57, 119, 74, 56])"
-    k7 = "array('b', [55, 50, 111, 104, 119, 93, 98, 52, 109, 37, 103, 86, 115, 98, 64, 98, 74, 109, 70, 104])"
-    k8 = "array('b', [-76, -74, 18, -109, 43, -102, -22, -57, 47, -95, -92, -115, -105, 101, -56, -20, -55, 71, -5, 107, 72, -1, -16, -59, -88, 55, -124, -16, -31, 48, 58, -84, -83, -124, -85, 38, -101, 36, 3, -94])"
-    k9 = "array('b', [-81, -116, -56, -75, 72, 80, 84, -18, -99, 23, 5, -98, -108, -36, 36, -79, 26, 70, 93, 125, -62, 87, 43, -18, -113, 32, 46, 17, -103, -104, -104, -125, -83, -99, 119, -19, -80, 116, 52, 18])"
-    mainObj = 'com.moneydance.apps.md.controller.Main@6228c344'
+    mainObj = 'com.moneydance.apps.md.controller.Main@3114a50a'
     
     def __init__(self): ...
     
@@ -863,6 +987,8 @@ class Main(StatusMonitor, FeatureModuleContext, com.moneydance.security.SecretKe
     def setRegistrationKey(self, s: str) -> bool: ...
     
     def setStatus(self, s: str) -> None: ...
+    
+    def setVerifier(self, c: com.moneydance.security.SecretKeyVerifier) -> None: ...
     
     def showURL(self, s: str) -> None: ...
     
@@ -1072,6 +1198,9 @@ class URLUtil:
     def __init__(self): ...
     
     @staticmethod
+    def checkURLIsValid(s: str) -> 'java.net.URL': ...
+    
+    @staticmethod
     def encode(s: str) -> str: ...
     
     @staticmethod
@@ -1116,7 +1245,7 @@ class UserPreferences:
     BEEP_ON_TXN_CHANGE = u'beep_on_transaction_change'
     BILLPAY_COUNTRY = u'ofx.bp_country'
     CHECK_PRINTER_CONFIGS = u'print.profiles'
-    CHECK_VERSION_AT_START = u'check_version_at_startup'
+    CHECK_VERSION_AT_START = u'updater.check_version_at_startup'
     CLEAR_CONFIRMED_TXNS = u'net.clear_confirmed_txns'
     CODE_FONT_NAME = u'code_font'
     CONFIRM_TXN_CHANGES = u'confirm_transaction_changes'
@@ -1299,15 +1428,6 @@ class UserPreferences:
     IMPORT_DT_FMT_IDX = u'gen.import_dt_fmt_idx'
     LAST_APPROVED_EXT_VERSION = u'confirmedext'
     LAST_USED_BUDGET_PERIOD = u'budget.last_used_period'
-    LICENSE_KEY = u'gen.lic_key'
-    LICENSE_KEY04 = u'gen.lic_key2004'
-    LICENSE_KEY10 = u'gen.lic_key2010'
-    LICENSE_KEY11 = u'gen.lic_key2011'
-    LICENSE_KEY14 = u'gen.lic_key2014'
-    LICENSE_KEY15 = u'gen.lic_key2015'
-    LICENSE_KEY17 = u'gen.lic_key2017'
-    LICENSE_KEY19 = u'gen.lic_key2019'
-    LICENSE_KEY21 = u'gen.lic_key2021'
     LOCALE_COUNTRY = u'locale.country'
     LOCALE_LANGUAGE = u'locale.language'
     MAIN_FONT_NAME = u'main_font'
@@ -1403,9 +1523,11 @@ class UserPreferences:
     SPLASH_DELAY = u'splash_delay'
     SPLIT_COL_WIDTHS = u'gui.split_column_widths'
     STARTUP_ACTION = u'startup_action'
+    SUPPRESS_NOTIFICATIONS_UP_TO_BUILD = u'updater.suppress_until_after'
     TIME_FORMAT = u'time_format'
     TXN_MATCH_NUM_DAY_THRESHOLD = u'net.downloaded_txn_date_window'
     USE_VAT = u'gen.use_vat'
+    VERSIONS_TO_TRACK = u'updater.version_to_track'
     
     def __init__(self, j: 'java.io.File'): ...
     
@@ -1428,6 +1550,8 @@ class UserPreferences:
     def getDecimalChar(self) -> int: ...
     
     def getDoubleSetting(self, s: str, f: float) -> float: ...
+    
+    def getExportCharset(self) -> 'java.nio.charset.Charset': ...
     
     @staticmethod
     def getInstance() -> 'UserPreferences': ...

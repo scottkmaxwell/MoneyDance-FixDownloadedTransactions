@@ -18,12 +18,22 @@ class ErrorMessage:
     def toString(self) -> str: ...
     
     
+    class Codes:
+        INVALID_ACCESS_TOKEN = 880012
+        MDPLUS_ITEM_EXPIRED = 880011
+        OFX_INVALID_SIGNON_ERRCODE = 15500
+        PRODUCT_NOT_READY = 880013
+        
+        def __init__(self): ...
+        
+        
+    
 class OFXAuthInfo:
     AUTH_TYPE_ANONYMOUS = 3
     AUTH_TYPE_FIXED = 0
     AUTH_TYPE_HWTOKEN = 2
     AUTH_TYPE_ONETIME = 1
-    cacheKey = '<reflected field public java.lang.String com.infinitekind.moneydance.online.OFXAuthInfo.cacheKey at 0x30>'
+    cacheKey = '<reflected field public java.lang.String com.infinitekind.moneydance.online.OFXAuthInfo.cacheKey at 0x33>'
     
     def __init__(self): ...
     
@@ -67,6 +77,8 @@ class OnlineBankingUI:
     def selectCreditCardAccount(self, c: com.infinitekind.moneydance.model.OnlineService, s: str) -> com.infinitekind.moneydance.model.OnlineAccountProxy: ...
     
     def selectInvestmentAccount(self, c: com.infinitekind.moneydance.model.OnlineService, s: str) -> com.infinitekind.moneydance.model.OnlineAccountProxy: ...
+    
+    def setPlaidItemStatus(self, c: 'com.moneydance.apps.md.controller.olb.plaid.PlaidConnection', c2: com.infinitekind.moneydance.model.OnlineAccountProxy, s: str, b: bool) -> None: ...
     
     def showOFXError(self, errorMessage: ErrorMessage) -> None: ...
     
@@ -171,9 +183,9 @@ class OnlineTxnMerger:
         
         
     class TxnCleanup:
-        originalTxn = '<reflected field public com.infinitekind.moneydance.model.AbstractTxn com.infinitekind.moneydance.online.OnlineTxnMerger$TxnCleanup.originalTxn at 0x31>'
-        suggestedSimilarTxn = '<reflected field public com.infinitekind.moneydance.model.AbstractTxn com.infinitekind.moneydance.online.OnlineTxnMerger$TxnCleanup.suggestedSimilarTxn at 0x32>'
-        txn = '<reflected field public com.infinitekind.moneydance.model.AbstractTxn com.infinitekind.moneydance.online.OnlineTxnMerger$TxnCleanup.txn at 0x33>'
+        originalTxn = '<reflected field public com.infinitekind.moneydance.model.AbstractTxn com.infinitekind.moneydance.online.OnlineTxnMerger$TxnCleanup.originalTxn at 0x34>'
+        suggestedSimilarTxn = '<reflected field public com.infinitekind.moneydance.model.AbstractTxn com.infinitekind.moneydance.online.OnlineTxnMerger$TxnCleanup.suggestedSimilarTxn at 0x35>'
+        txn = '<reflected field public com.infinitekind.moneydance.model.AbstractTxn com.infinitekind.moneydance.online.OnlineTxnMerger$TxnCleanup.txn at 0x36>'
         
         def __init__(self, onlineTxnMerger: 'OnlineTxnMerger', c: com.infinitekind.moneydance.model.AbstractTxn, c2: com.infinitekind.moneydance.model.AbstractTxn, f: float): ...
         
@@ -195,10 +207,10 @@ class OnlineTxnMerger:
         
         
     class TxnMatch:
-        matchType = '<reflected field public com.infinitekind.moneydance.online.OnlineTxnMerger$TxnMatchType com.infinitekind.moneydance.online.OnlineTxnMerger$TxnMatch.matchType at 0x34>'
-        onlineTxn = '<reflected field public com.infinitekind.moneydance.model.OnlineTxn com.infinitekind.moneydance.online.OnlineTxnMerger$TxnMatch.onlineTxn at 0x35>'
-        registerTxn = '<reflected field public com.infinitekind.moneydance.model.AbstractTxn com.infinitekind.moneydance.online.OnlineTxnMerger$TxnMatch.registerTxn at 0x36>'
-        txn = '<reflected field public com.infinitekind.moneydance.model.AbstractTxn com.infinitekind.moneydance.online.OnlineTxnMerger$TxnMatch.txn at 0x37>'
+        matchType = '<reflected field public com.infinitekind.moneydance.online.OnlineTxnMerger$TxnMatchType com.infinitekind.moneydance.online.OnlineTxnMerger$TxnMatch.matchType at 0x37>'
+        onlineTxn = '<reflected field public com.infinitekind.moneydance.model.OnlineTxn com.infinitekind.moneydance.online.OnlineTxnMerger$TxnMatch.onlineTxn at 0x38>'
+        registerTxn = '<reflected field public com.infinitekind.moneydance.model.AbstractTxn com.infinitekind.moneydance.online.OnlineTxnMerger$TxnMatch.registerTxn at 0x39>'
+        txn = '<reflected field public com.infinitekind.moneydance.model.AbstractTxn com.infinitekind.moneydance.online.OnlineTxnMerger$TxnMatch.txn at 0x3a>'
         
         def __init__(self): ...
         
