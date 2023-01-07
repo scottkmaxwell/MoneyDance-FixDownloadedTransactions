@@ -2,19 +2,17 @@
 # coding=utf-8
 # Python script to be run in Moneydance to perform amazing feats of
 # financial scripting
+from __future__ import print_function
 import os.path
 
 try:
-    from com.infinitekind.moneydance.model import *
-except ImportError:
     from moneydance import *
-    from com.infinitekind.moneydance.model import *
-
-try:
     # noinspection PyUnresolvedReferences
     from typing import Dict, Generator, Iterator, List, Optional, Set, Tuple, Union
 except ImportError:
     pass
+
+from com.infinitekind.moneydance.model import *
 
 # Change this to True to install as an extension. Then you will need to choose
 # Extensions -> Fix Downloaded Transactions from the menu.
@@ -116,7 +114,7 @@ def fix_unicode(s):
     return s
 
 
-_found_accounts = {}  # Dict[str, Account]
+_found_accounts = {}  # type: Dict[str, Account]
 
 
 def find_account(account):
