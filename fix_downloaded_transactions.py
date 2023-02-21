@@ -2192,7 +2192,7 @@ class ActionButton(JButton):
             self.setToolTipText(tooltip)
 
 
-class QuickJFrame:
+class FrameController(Runnable):
     def __init__(
         self,
         title,
@@ -2205,318 +2205,299 @@ class QuickJFrame:
         screenLocation=None,
         lAutoSize=False,
     ):
+        super(self.__class__, self).__init__()
         self.title = title
         self.output = output
         self.problems = problems
         self.lAlertLevel = lAlertLevel
-        self.returnFrame = None
         self.copyToClipboard = copyToClipboard
         self.lJumpToEnd = lJumpToEnd
         self.lWrapText = lWrapText
         self.screenLocation = screenLocation
         self.lAutoSize = lAutoSize
-        # if Platform.isOSX() and int(float(MD_REF.getBuild())) >= 3039: self.lAlertLevel = 0    # Colors don't work on Mac since VAQua
-        # if isMDThemeDark() or isMacDarkModeDetected():
-        #     self.lAlertLevel = 0
+        self.returnFrame = None
 
-    # noinspection PyBroadException
     def show_the_frame(self):
-        # noinspection PyBroadException
-        class MyQuickJFrameRunnable(Runnable):
-            def __init__(self, callingClass):
-                super(self.__class__, self).__init__()
-                self.callingClass = callingClass
-
-            def run(self):  # noqa
-                screen_size = Toolkit.getDefaultToolkit().getScreenSize()
-                frame_width = min(
-                    screen_size.width - 20,
-                    max(
-                        GetFirstMainFrame.DEFAULT_MAX_WIDTH,
-                        int(round(GetFirstMainFrame.getSize().width * 0.9, 0)),
-                    ),
-                )
-                frame_height = min(
-                    screen_size.height - 20,
-                    max(
-                        GetFirstMainFrame.DEFAULT_MAX_HEIGHT,
-                        int(round(GetFirstMainFrame.getSize().height * 0.9, 0)),
-                    ),
-                )
-
-                # JFrame.setDefaultLookAndFeelDecorated(True)   # Note: Darcula Theme doesn't like this and seems to be OK without this statement...
-                extra_text = ""
-
-                internal_jframe = MyJFrame(
-                    self.callingClass.title
-                    + " (%s+F to find/search for text)%s"
-                    % (MD_REF.getUI().ACCELERATOR_MASK_STR, extra_text)
-                )
-                internal_jframe.setName("%s_quickjframe" % myModuleID)
-
-                if not Platform.isOSX():
-                    internal_jframe.setIconImage(
-                        MDImages.getImage(
-                            MD_REF.getSourceInformation().getIconResource()
-                        )
-                    )
-
-                internal_jframe.setDefaultCloseOperation(
-                    WindowConstants.DO_NOTHING_ON_CLOSE
-                )
-                internal_jframe.setResizable(True)
-
-                shortcut = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()
-
-                # noinspection PyArgumentList
-                internal_jframe.getRootPane().getInputMap(
-                    JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT
-                ).put(KeyStroke.getKeyStroke(KeyEvent.VK_W, shortcut), "close-window")
-                # noinspection PyArgumentList
-                internal_jframe.getRootPane().getInputMap(
-                    JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT
-                ).put(KeyStroke.getKeyStroke(KeyEvent.VK_F4, shortcut), "close-window")
-                # noinspection PyArgumentList
-                internal_jframe.getRootPane().getInputMap(
-                    JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT
-                ).put(KeyStroke.getKeyStroke(KeyEvent.VK_F, shortcut), "search-window")
-                # noinspection PyArgumentList
-                internal_jframe.getRootPane().getInputMap(
-                    JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT
-                ).put(KeyStroke.getKeyStroke(KeyEvent.VK_P, shortcut), "print-me")
-                # noinspection PyArgumentList
-                internal_jframe.getRootPane().getInputMap(
-                    JComponent.WHEN_IN_FOCUSED_WINDOW
-                ).put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "close-window")
-
-                text_area = JTextArea(self.callingClass.output)
-                text_area.setEditable(False)
-                text_area.setLineWrap(self.callingClass.lWrapText)
-                text_area.setWrapStyleWord(False)
-                text_area.setFont(getMonoFont())
-
-                @action
-                def close_action(theFrame):
-                    # noinspection PyBroadException
-                    try:
-                        if not SwingUtilities.isEventDispatchThread():
-                            SwingUtilities.invokeLater(
-                                GenericDisposeRunnable(theFrame))
-                        else:
-                            theFrame.dispose()
-                    except:
-                        dump_sys_error_to_md_console_and_errorlog()
-
-                @action
-                def printAction(theCallingClass, theJText, theTitle=""):
-                    printOutputFile(
-                        _callingClass=theCallingClass,
-                        _theTitle=theTitle,
-                        _theJText=theJText,
-                    )
-
-                print_action = printAction(self.callingClass, text_area, self.callingClass.title)
-                internal_jframe.getRootPane().getActionMap().put(
-                    "close-window", close_action(internal_jframe)
-                )
-                internal_jframe.getRootPane().getActionMap().put(
-                    "search-window", SearchAction(internal_jframe, text_area)
-                )
-                internal_jframe.getRootPane().getActionMap().put(
-                    "print-me",
-                    print_action,
-                )
-
-                class WindowListener(WindowAdapter):
-                    def __init__(self, theFrame):
-                        self.theFrame = theFrame
-                        self.saveMD_REF = MD_REF
-
-                    def windowClosing(self, WindowEvent):  # noqa
-                        self.theFrame.dispose()
-
-                    def windowClosed(self, WindowEvent):  # noqa
-                        pass
-
-                internal_jframe.addWindowListener(
-                    WindowListener(internal_jframe)
-                )
-
-                internal_scroll_pane = JScrollPane(
-                    text_area,
-                    JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
-                    JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED,
-                )
-
-                if self.callingClass.lAlertLevel >= 2:
-                    # internal_scroll_pane.setBackground(Color.RED)
-                    text_area.setBackground(Color.RED)
-                    text_area.setForeground(Color.BLACK)
-                    text_area.setOpaque(True)
-                elif self.callingClass.lAlertLevel >= 1:
-                    # internal_scroll_pane.setBackground(Color.YELLOW)
-                    text_area.setBackground(Color.GREEN)
-                    text_area.setForeground(Color.BLACK)
-                    text_area.setOpaque(True)
-
-                if not self.callingClass.lAutoSize:
-                    internal_jframe.setPreferredSize(
-                        Dimension(frame_width, frame_height)
-                    )
-
-                SetupMDColors.updateUI()
-
-                print_button = ActionButton(
-                    "Print",
-                    print_action,
-                    tooltip="Prints the output displayed in this window to your printer",
-                )
-
-                if GlobalVars.defaultPrinterAttributes is None:
-                    class PageSetupAction(AbstractAction):
-                        # noinspection PyMethodMayBeStatic
-                        def actionPerformed(self, _event):
-                            pageSetup()
-
-                    print_page_setup = ActionButton(
-                        "Page Setup",
-                        PageSetupAction(),
-                        tooltip="Printer Page Setup",
-                    )
-
-                save_button = ActionButton(
-                    "Save to file",
-                    lambda: saveOutputFile(
-                        internal_jframe,
-                        "QUICKJFRAME",
-                        "%s_output.txt" % myModuleID,
-                        self.callingClass.output,
-                    ),
-                    tooltip="Saves the output displayed in this window to a file",
-                )
-
-                @action
-                def toggle_wrap(calling_class, _text_area):
-                    calling_class.lWrapText = not calling_class.lWrapText
-                    _text_area.setLineWrap(calling_class.lWrapText)
-
-                wrap_option = JCheckBox(
-                    "Wrap Contents (Screen & Print)", self.callingClass.lWrapText
-                )
-                wrap_option.addActionListener(toggle_wrap(self.callingClass, text_area))
-                wrap_option.setForeground(SetupMDColors.FOREGROUND_REVERSED)
-                wrap_option.setBackground(SetupMDColors.BACKGROUND_REVERSED)
-
-                top_button = ActionButton("Top", lambda: text_area.setCaretPosition(0))
-                bottom_button = ActionButton("Bottom", lambda: text_area.setCaretPosition(text_area.getDocument().getLength()))
-
-                if self.callingClass.problems:
-                    @action
-                    def show_problems(_text_area, document):
-                        QuickJFrame(
-                            "Unknown Transactions",
-                            document,
-                            lAlertLevel=2,
-                            lWrapText=False,
-                            lAutoSize=True,
-                        ).show_the_frame()
-
-                    show_problems_button = ActionButton("Show Problems", show_problems(text_area, self.callingClass.problems))
-                else:
-                    show_problems_button = None
-
-                close_button = ActionButton("Close", close_action(internal_jframe))
-
-                if Platform.isOSX():
-                    save_use_screen_menu_bar = System.getProperty(
-                        "apple.laf.useScreenMenuBar"
-                    )
-                    if (
-                        save_use_screen_menu_bar is None
-                        or save_use_screen_menu_bar == ""
-                    ):
-                        save_use_screen_menu_bar = System.getProperty(
-                            "com.apple.macos.useScreenMenuBar"
-                        )
-                    System.setProperty("apple.laf.useScreenMenuBar", "false")
-                    System.setProperty("com.apple.macos.useScreenMenuBar", "false")
-                else:
-                    save_use_screen_menu_bar = "true"
-
-                mb = JMenuBar()
-                mb.setBorder(EmptyBorder(0, 0, 0, 0))
-                mb.add(Box.createRigidArea(Dimension(10, 0)))
-                mb.add(top_button)
-                mb.add(Box.createRigidArea(Dimension(10, 0)))
-                mb.add(bottom_button)
-                mb.add(Box.createHorizontalGlue())
-                mb.add(wrap_option)
-
-                if GlobalVars.defaultPrinterAttributes is None:
-                    mb.add(Box.createRigidArea(Dimension(10, 0)))
-                    mb.add(print_page_setup)  # noqa
-
-                mb.add(Box.createHorizontalGlue())
-                mb.add(print_button)
-                mb.add(Box.createRigidArea(Dimension(10, 0)))
-                mb.add(save_button)
-                if show_problems_button is not None:
-                    mb.add(Box.createRigidArea(Dimension(10, 0)))
-                    mb.add(show_problems_button)
-                mb.add(Box.createRigidArea(Dimension(10, 0)))
-                mb.add(close_button)
-                mb.add(Box.createRigidArea(Dimension(30, 0)))
-
-                internal_jframe.setJMenuBar(mb)
-
-                internal_jframe.add(internal_scroll_pane)
-
-                internal_jframe.pack()
-                if self.callingClass.screenLocation and isinstance(
-                    self.callingClass.screenLocation, Point
-                ):
-                    internal_jframe.setLocation(self.callingClass.screenLocation)
-                else:
-                    internal_jframe.setLocationRelativeTo(None)
-
-                internal_jframe.setVisible(True)
-
-                if Platform.isOSX():
-                    System.setProperty(
-                        "apple.laf.useScreenMenuBar", save_use_screen_menu_bar
-                    )
-                    System.setProperty(
-                        "com.apple.macos.useScreenMenuBar", save_use_screen_menu_bar
-                    )
-
-                if (
-                    "errlog.txt" in self.callingClass.title
-                    or self.callingClass.lJumpToEnd
-                ):
-                    text_area.setCaretPosition(text_area.getDocument().getLength())
-
-                try:
-                    if self.callingClass.copyToClipboard:
-                        Toolkit.getDefaultToolkit().getSystemClipboard().setContents(
-                            StringSelection(self.callingClass.output), None
-                        )
-                except:
-                    myPrint("J", "Error copying contents to Clipboard")
-                    dump_sys_error_to_md_console_and_errorlog()
-
-                self.callingClass.returnFrame = internal_jframe
-
         if not SwingUtilities.isEventDispatchThread():
-            myPrint(
-                "DB",
-                ".. Not running within the EDT so calling via MyQuickJFrameRunnable()...",
-            )
-            SwingUtilities.invokeAndWait(MyQuickJFrameRunnable(self))
+            SwingUtilities.invokeAndWait(self)
         else:
-            myPrint("DB", ".. Already within the EDT so calling naked...")
-            MyQuickJFrameRunnable(self).run()
-
+            self.run()
         return self.returnFrame
+
+    def run(self):  # noqa
+        screen_size = Toolkit.getDefaultToolkit().getScreenSize()
+        frame_width = min(
+            screen_size.width - 20,
+            max(
+                GetFirstMainFrame.DEFAULT_MAX_WIDTH,
+                int(round(GetFirstMainFrame.getSize().width * 0.9, 0)),
+            ),
+        )
+        frame_height = min(
+            screen_size.height - 20,
+            max(
+                GetFirstMainFrame.DEFAULT_MAX_HEIGHT,
+                int(round(GetFirstMainFrame.getSize().height * 0.9, 0)),
+            ),
+        )
+
+        # JFrame.setDefaultLookAndFeelDecorated(True)   # Note: Darcula Theme doesn't like this and seems to be OK without this statement...
+        extra_text = ""
+
+        internal_jframe = MyJFrame(
+            self.title
+            + " (%s+F to find/search for text)%s"
+            % (MD_REF.getUI().ACCELERATOR_MASK_STR, extra_text)
+        )
+        internal_jframe.setName("%s_quickjframe" % myModuleID)
+
+        if not Platform.isOSX():
+            internal_jframe.setIconImage(
+                MDImages.getImage(
+                    MD_REF.getSourceInformation().getIconResource()
+                )
+            )
+
+        internal_jframe.setDefaultCloseOperation(
+            WindowConstants.DO_NOTHING_ON_CLOSE
+        )
+        internal_jframe.setResizable(True)
+
+        shortcut = Toolkit.getDefaultToolkit().getMenuShortcutKeyMaskEx()
+
+        # noinspection PyArgumentList
+        internal_jframe.getRootPane().getInputMap(
+            JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT
+        ).put(KeyStroke.getKeyStroke(KeyEvent.VK_W, shortcut), "close-window")
+        # noinspection PyArgumentList
+        internal_jframe.getRootPane().getInputMap(
+            JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT
+        ).put(KeyStroke.getKeyStroke(KeyEvent.VK_F4, shortcut), "close-window")
+        # noinspection PyArgumentList
+        internal_jframe.getRootPane().getInputMap(
+            JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT
+        ).put(KeyStroke.getKeyStroke(KeyEvent.VK_F, shortcut), "search-window")
+        # noinspection PyArgumentList
+        internal_jframe.getRootPane().getInputMap(
+            JComponent.WHEN_ANCESTOR_OF_FOCUSED_COMPONENT
+        ).put(KeyStroke.getKeyStroke(KeyEvent.VK_P, shortcut), "print-me")
+        # noinspection PyArgumentList
+        internal_jframe.getRootPane().getInputMap(
+            JComponent.WHEN_IN_FOCUSED_WINDOW
+        ).put(KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0), "close-window")
+
+        text_area = JTextArea(self.output)
+        text_area.setEditable(False)
+        text_area.setLineWrap(self.lWrapText)
+        text_area.setWrapStyleWord(False)
+        text_area.setFont(getMonoFont())
+
+        @action
+        def close_action(theFrame):
+            # noinspection PyBroadException
+            try:
+                if not SwingUtilities.isEventDispatchThread():
+                    SwingUtilities.invokeLater(
+                        GenericDisposeRunnable(theFrame))
+                else:
+                    theFrame.dispose()
+            except:
+                dump_sys_error_to_md_console_and_errorlog()
+
+        @action
+        def printAction(theCallingClass, theJText, theTitle=""):
+            printOutputFile(
+                _callingClass=theCallingClass,
+                _theTitle=theTitle,
+                _theJText=theJText,
+            )
+
+        print_action = printAction(self, text_area, self.title)
+        internal_jframe.getRootPane().getActionMap().put(
+            "close-window", close_action(internal_jframe)
+        )
+        internal_jframe.getRootPane().getActionMap().put(
+            "search-window", SearchAction(internal_jframe, text_area)
+        )
+        internal_jframe.getRootPane().getActionMap().put(
+            "print-me",
+            print_action,
+        )
+
+        class WindowListener(WindowAdapter):
+            def __init__(self, theFrame):
+                self.theFrame = theFrame
+                self.saveMD_REF = MD_REF
+
+            def windowClosing(self, _event):
+                self.theFrame.dispose()
+
+        internal_jframe.addWindowListener(
+            WindowListener(internal_jframe)
+        )
+
+        internal_scroll_pane = JScrollPane(
+            text_area,
+            JScrollPane.VERTICAL_SCROLLBAR_AS_NEEDED,
+            JScrollPane.HORIZONTAL_SCROLLBAR_AS_NEEDED,
+        )
+
+        if self.lAlertLevel >= 2:
+            text_area.setBackground(Color.RED)
+            text_area.setForeground(Color.BLACK)
+            text_area.setOpaque(True)
+        elif self.lAlertLevel >= 1:
+            text_area.setBackground(Color.GREEN)
+            text_area.setForeground(Color.BLACK)
+            text_area.setOpaque(True)
+
+        if not self.lAutoSize:
+            internal_jframe.setPreferredSize(
+                Dimension(frame_width, frame_height)
+            )
+
+        SetupMDColors.updateUI()
+
+        print_button = ActionButton(
+            "Print",
+            print_action,
+            tooltip="Prints the output displayed in this window to your printer",
+        )
+
+        if GlobalVars.defaultPrinterAttributes is None:
+            class PageSetupAction(AbstractAction):
+                # noinspection PyMethodMayBeStatic
+                def actionPerformed(self, _event):
+                    pageSetup()
+
+            print_page_setup = ActionButton(
+                "Page Setup",
+                PageSetupAction(),
+                tooltip="Printer Page Setup",
+            )
+
+        save_button = ActionButton(
+            "Save to file",
+            lambda: saveOutputFile(
+                internal_jframe,
+                "QUICKJFRAME",
+                "%s_output.txt" % myModuleID,
+                self.output,
+            ),
+            tooltip="Saves the output displayed in this window to a file",
+        )
+
+        @action
+        def toggle_wrap(calling_class, _text_area):
+            calling_class.lWrapText = not calling_class.lWrapText
+            _text_area.setLineWrap(calling_class.lWrapText)
+
+        wrap_option = JCheckBox(
+            "Wrap Contents (Screen & Print)", self.lWrapText
+        )
+        wrap_option.addActionListener(toggle_wrap(self, text_area))
+        wrap_option.setForeground(SetupMDColors.FOREGROUND_REVERSED)
+        wrap_option.setBackground(SetupMDColors.BACKGROUND_REVERSED)
+
+        top_button = ActionButton("Top", lambda: text_area.setCaretPosition(0))
+        bottom_button = ActionButton("Bottom", lambda: text_area.setCaretPosition(text_area.getDocument().getLength()))
+
+        if self.problems:
+            show_problems_button = ActionButton("Show Problems", lambda: show_problems(self.problems))
+        else:
+            show_problems_button = None
+
+        close_button = ActionButton("Close", close_action(internal_jframe))
+
+        if Platform.isOSX():
+            save_use_screen_menu_bar = System.getProperty(
+                "apple.laf.useScreenMenuBar"
+            )
+            if (
+                save_use_screen_menu_bar is None
+                or save_use_screen_menu_bar == ""
+            ):
+                save_use_screen_menu_bar = System.getProperty(
+                    "com.apple.macos.useScreenMenuBar"
+                )
+            System.setProperty("apple.laf.useScreenMenuBar", "false")
+            System.setProperty("com.apple.macos.useScreenMenuBar", "false")
+        else:
+            save_use_screen_menu_bar = "true"
+
+        mb = JMenuBar()
+        mb.setBorder(EmptyBorder(0, 0, 0, 0))
+        mb.add(Box.createRigidArea(Dimension(10, 0)))
+        mb.add(top_button)
+        mb.add(Box.createRigidArea(Dimension(10, 0)))
+        mb.add(bottom_button)
+        mb.add(Box.createHorizontalGlue())
+        mb.add(wrap_option)
+
+        if GlobalVars.defaultPrinterAttributes is None:
+            mb.add(Box.createRigidArea(Dimension(10, 0)))
+            mb.add(print_page_setup)  # noqa
+
+        mb.add(Box.createHorizontalGlue())
+        mb.add(print_button)
+        mb.add(Box.createRigidArea(Dimension(10, 0)))
+        mb.add(save_button)
+        if show_problems_button is not None:
+            mb.add(Box.createRigidArea(Dimension(10, 0)))
+            mb.add(show_problems_button)
+        mb.add(Box.createRigidArea(Dimension(10, 0)))
+        mb.add(close_button)
+        mb.add(Box.createRigidArea(Dimension(30, 0)))
+
+        internal_jframe.setJMenuBar(mb)
+
+        internal_jframe.add(internal_scroll_pane)
+
+        internal_jframe.pack()
+        if self.screenLocation and isinstance(
+            self.screenLocation, Point
+        ):
+            internal_jframe.setLocation(self.screenLocation)
+        else:
+            internal_jframe.setLocationRelativeTo(None)
+
+        internal_jframe.setVisible(True)
+
+        if Platform.isOSX():
+            System.setProperty(
+                "apple.laf.useScreenMenuBar", save_use_screen_menu_bar
+            )
+            System.setProperty(
+                "com.apple.macos.useScreenMenuBar", save_use_screen_menu_bar
+            )
+
+        if (
+            "errlog.txt" in self.title
+            or self.lJumpToEnd
+        ):
+            text_area.setCaretPosition(text_area.getDocument().getLength())
+
+        # noinspection PyBroadException
+        try:
+            if self.copyToClipboard:
+                Toolkit.getDefaultToolkit().getSystemClipboard().setContents(
+                    StringSelection(self.output), None
+                )
+        except:
+            myPrint("J", "Error copying contents to Clipboard")
+            dump_sys_error_to_md_console_and_errorlog()
+
+        self.returnFrame = internal_jframe
+
+
+def show_problems(document):
+    FrameController(
+        "Unknown Transactions",
+        document,
+        lAlertLevel=2,
+        lWrapText=False,
+        lAutoSize=True,
+    ).show_the_frame()
 
 
 # ############# END OF ADDITIONS ########################################################################################
@@ -3283,7 +3264,7 @@ class FixDownloadedTransactionsExtension(object):
             unmodified_message = "\n".join(lines)
         if modified:
             output = self.create_modified_summary(modified)
-            QuickJFrame(
+            FrameController(
                 "Fixed Transactions",
                 output,
                 unmodified_message,
@@ -3292,13 +3273,7 @@ class FixDownloadedTransactionsExtension(object):
                 lAutoSize=True,
             ).show_the_frame()
         elif unmodified:
-            QuickJFrame(
-                "Unknown Transactions",
-                unmodified_message,
-                lAlertLevel=2,
-                lWrapText=False,
-                lAutoSize=True,
-            ).show_the_frame()
+            show_problems(unmodified_message)
         fix_count = len(modified)
         total = fix_count + unmodified.count
         myPopupInformationBox(
