@@ -1,0 +1,8 @@
+{
+  "actions" = (
+    {
+      "type" = "initializer"
+      "script_file" = "fix_downloaded_transactions.py"
+    }
+  )
+}

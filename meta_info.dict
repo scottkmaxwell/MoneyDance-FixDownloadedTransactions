@@ -1,0 +1,11 @@
+{
+  "id" = "fix_downloaded_transactions"
+  "extension_type" = "python"
+  "vendor" = "Scott Maxwell"
+  "module_build" = "1000"
+  "minbuild" = "3056"
+  "vendor_url" = "https://github.com/scottkmaxwell/MoneyDance-FixDownloadedTransactions"
+  "module_name" = "Fix Downloaded Transactions"
+  "module_desc" = "This extension allows you to create rules for automatically confirming transactions, allowing you to set their description and category. See https://github.com/scottkmaxwell/MoneyDance-FixDownloadedTransactions for instructions."
+  "mac_sandbox_friendly" = "true"
+}

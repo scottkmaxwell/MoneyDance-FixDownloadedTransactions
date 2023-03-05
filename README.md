@@ -7,30 +7,15 @@ incorrect guesses for the description. This Python extension will allow you
 to create rules for automatically confirming transactions, allowing you to
 set their description and category.
 
+When you choose `Extensions -> Fix Downloaded Transactions`, the extension will
+provide a file selector dialog that you can use to select your CSV file.
+
 ## Create your CSV File
 
 To begin, you may want to just copy the `MoneyDance.csv` included here to your
 `Downloads/MoneyDance.csv` folder. It has the correct heading and several
 examples included. After you copy that file, it is easiest to open it with
 Excel or Numbers.
-
-## Running the Extension
-
-Note: Although this code was originally designed to work as an extension,
-since it is not signed, it generally works better in immediate mode where
-you just run the code directly.
-
-Download the code, then from MoneyDance, do `Window -> Show MoneyBot Console`
-to show the Python console window. ![](docs/step1.png)
-
-Then do `Open` and select the `fix_downloaded_transactions.py` file from the
-downloaded code. ![](docs/step2.png)
-
-Once it is loaded, you can hit the `Run` button as many times as you like.
-![](docs/step3.png)
-
-In the above example, I was already up-to-date. If I then downloaded more
-transactions, I could just hit `Run` again.
 
 ## Creating your own rules in the CSV file
 
@@ -176,4 +161,4 @@ understand the code you are writing.
 
 If you want to write extensions in Python, you may want to either copy the
 `com` folder to your own code's folder, or run `make_pyi.py` to be sure you
-have all of the latest MoneyDance APIs.
+have all the latest MoneyDance APIs.

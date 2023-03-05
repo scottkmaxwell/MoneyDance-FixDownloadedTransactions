@@ -1473,7 +1473,7 @@ def show_problems(document):
 # Extensions -> Fix Downloaded Transactions from the menu.
 # Since this extension is not signed, it must be installed whenever you restart
 # MoneyDance, so you may not find this very useful.
-INSTALL_EXTENSION = False
+INSTALL_EXTENSION = True
 
 # Location of CSV files with replacements.
 # Note: At the time of this writing, all CSVs must be in your Downloads folder
@@ -2068,6 +2068,14 @@ class FixDownloadedTransactionsExtension(object):
             cls._instance = FixDownloadedTransactionsExtension()
         return cls._instance
 
+    @staticmethod
+    def unload():
+        FixDownloadedTransactionsExtension._instance = None
+        FixDownloadedTransactionsExtension._accounts_by_type = {}
+        FixDownloadedTransactionsExtension._account_names_by_type = {}
+        FixDownloadedTransactionsExtension._fixer_groups_by_account_type = {}
+        FixDownloadedTransactionsExtension._fixer_groups_by_account_name = {}
+
     @property
     def account_names_by_type(self):  # type: () -> Dict[str, Set[str]]
         if not self._account_names_by_type:
@@ -2163,6 +2171,7 @@ class FixDownloadedTransactionsExtension(object):
             )
 
             if not csv_paths:
+                myPopupInformationBox(theMessage="See https://github.com/scottkmaxwell/MoneyDance-FixDownloadedTransactions for instructions.")
                 return
             with open(config, "w") as f:
                 json.dump({"csv_path": csv_paths[0]}, f)
