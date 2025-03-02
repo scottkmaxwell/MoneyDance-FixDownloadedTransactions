@@ -1479,7 +1479,9 @@ INSTALL_EXTENSION = True
 # Note: At the time of this writing, all CSVs must be in your Downloads folder
 #       due to security issues.
 # If you leave this empty, you will be prompted for a single CSV file.
-CSV_FILE_NAMES = []
+DEFAULT_FILENAME = "MoneyDance.csv"
+DEFAULT_PATH = os.path.join(get_home_dir(), "Downloads", DEFAULT_FILENAME)
+CSV_FILE_NAMES = [DEFAULT_PATH] if os.path.exists(DEFAULT_PATH) else []
 
 # Common unicode patterns used by spreadsheets with ASCII replacements
 UNICODE_REPLACEMENTS = {
@@ -1793,7 +1795,7 @@ class Fixer(object):
     ):
         # type: (str, str, str, str, float, float, float, str, bool) -> None
         self.replacement = replacement
-        if not exact_match and not starts_with:
+        if not exact_match and not starts_with and not memo_contains:
             starts_with = replacement
         self.exact_match = remove_extra_spaces(strip_prefixes(exact_match.upper()))
         self.starts_with = strip_prefixes(starts_with.upper())
@@ -1848,17 +1850,18 @@ class FixerGroup(object):
         # type: () -> None
         self.exact_matches = {}  # type: Dict[str, List[Fixer]]
         self.starts_with = {}  # type: Dict[str, List[Fixer]]
+        self.memo_contains = []  # type: List[Fixer]
 
     def add(self, fixer):
         # type: (Fixer) -> None
         if fixer.starts_with:
             self.starts_with.setdefault(fixer.first_word, []).append(fixer)
-        elif fixer.exact_match:
+            if not fixer.exact_match:
+                self.exact_matches.setdefault(fixer.replacement.upper(), []).append(fixer)
+        if fixer.exact_match:
             self.exact_matches.setdefault(fixer.exact_match, []).append(fixer)
-            if fixer.exact_match == fixer.replacement.upper():
-                # Don't add it twice
-                return
-        self.exact_matches.setdefault(fixer.replacement.upper(), []).append(fixer)
+        if fixer.memo_contains and not fixer.starts_with and not fixer.exact_match:
+            self.memo_contains.append(fixer)
 
     def fix(self, txn, save_changes=False):
         # type: (Transaction, bool) -> bool
@@ -1866,6 +1869,9 @@ class FixerGroup(object):
             if possible.fix(txn, save_changes=save_changes, check_starts_with=False):
                 return True
         for possible in self.starts_with.get(txn.first_word, []):
+            if possible.fix(txn, save_changes=save_changes):
+                return True
+        for possible in self.memo_contains:
             if possible.fix(txn, save_changes=save_changes):
                 return True
         return False
@@ -2147,7 +2153,7 @@ class FixDownloadedTransactionsExtension(object):
         csv_paths = CSV_FILE_NAMES
         if not csv_paths:
             default_load_path = get_home_dir()
-            default_load_filename = "MoneyDance.csv"
+            default_load_filename = DEFAULT_FILENAME
             config = "fdt-config.json"
             if os.path.exists(config):
                 with open(config, "r") as f:
