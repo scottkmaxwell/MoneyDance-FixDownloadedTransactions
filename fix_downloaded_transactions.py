@@ -5,6 +5,8 @@
 
 from __future__ import print_function
 
+import csv
+import io
 import json
 import os.path
 import traceback
@@ -1568,7 +1570,7 @@ def strip_prefixes(s):
 def first_word(s):
     # type: (str) -> str
     """Get the first word to use as a key."""
-    for separator in (" ", "*", ".", "-", "/"):
+    for separator in (" ", "*", ".", "-", "/", ","):
         s = s.partition(separator)[0]
     return s.upper()
 
@@ -1798,7 +1800,7 @@ class Fixer(object):
     ):
         # type: (str, str, str, str, str, float, float, float, str, bool) -> None
         self.replacement = replacement
-        if not exact_match and not starts_with and not memo_contains:
+        if not exact_match and not starts_with and not memo_contains and not contains:
             starts_with = replacement
         self.exact_match = remove_extra_spaces(strip_prefixes(exact_match.upper()))
         self.starts_with = strip_prefixes(starts_with.upper())
@@ -1874,18 +1876,19 @@ class FixerGroup(object):
         # type: (Fixer) -> None
         # contains always gets checked so it will pick up fixers that also have starts_with or exact_match
         if fixer.contains:
+            myPrint("DP", "Adding {} <contains> {}".format(fixer.replacement, fixer.contains))
             self.contains.append(fixer)
         # starts_with is less specify than exact_match so it would get picked up for fixes that also contain exact_match
         elif fixer.starts_with:
+            myPrint("DP", "Adding {} <startswith> {} ({})".format(fixer.replacement, fixer.starts_with, fixer.first_word))
             self.starts_with.setdefault(fixer.first_word, []).append(fixer)
         elif fixer.exact_match:
+            myPrint("DP", "Adding {} <exact> {}".format(fixer.replacement, fixer.exact_match))
             self.exact_matches.setdefault(fixer.exact_match, []).append(fixer)
         # we only want to do the memo_contains check if the other 3 fields are empty
         elif fixer.memo_contains:
+            myPrint("DP", "Adding {} <memo_contains> {}".format(fixer.replacement, fixer.memo_contains))
             self.contains.append(fixer)
-        # if none of them are set, then use replacement like starts_with
-        else:
-            self.starts_with.setdefault(fixer.replacement.upper(), []).append(fixer)
 
     def fix(self, txn, save_changes=False):
         # type: (Transaction, bool) -> bool
@@ -1939,14 +1942,16 @@ class FixerCollection(object):
                     "Error",
                 )
                 continue
-            for line in lines[1:]:
-                kwargs = dict(zip(field_names, line.split(",")))
+            csv_file = io.StringIO(u"\n".join(lines[1:]))
+
+            for fields in csv.reader(csv_file):
+                kwargs = dict(zip(field_names, fields))
                 try:
                     cls.create_fixer(**kwargs)
                 except FixerError as e:
                     myPopupInformationBox(
                         None,
-                        "Error: '{}' ({})".format(line, e.message),
+                        "Error: '{}' ({})".format(", ".join(fields), e.message),
                         "Error",
                     )
 
