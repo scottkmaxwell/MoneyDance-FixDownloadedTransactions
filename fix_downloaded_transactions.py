@@ -69,9 +69,13 @@ MD_REF = moneydance
 debug = False
 
 myModuleID = "fix_downloaded_transactions"
-version_build = "1000"
+version_build = "1002"
 MIN_BUILD_REQD = 1904  # Check for builds less than 1904 / version < 2019.4
 _I_CAN_RUN_AS_MONEYBOT_SCRIPT = True
+
+# Change this to True to install as an extension. Then you will need to choose
+# Extensions -> Fix Downloaded Transactions from the menu.
+INSTALL_EXTENSION = False
 
 
 class MyJFrame(JFrame):
@@ -1469,12 +1473,6 @@ def show_problems(document):
 # ############# END OF ADDITIONS ########################################################################################
 
 
-# Change this to True to install as an extension. Then you will need to choose
-# Extensions -> Fix Downloaded Transactions from the menu.
-# Since this extension is not signed, it must be installed whenever you restart
-# MoneyDance, so you may not find this very useful.
-INSTALL_EXTENSION = False
-
 # Location of CSV files with replacements.
 # Note: At the time of this writing, all CSVs must be in your Downloads folder
 #       due to security issues.
@@ -1828,12 +1826,12 @@ class Fixer(object):
             )
             did_check = True
 
-        if not got_positive_match and self.contains:            
+        if not got_positive_match and self.contains:
             got_positive_match = self.contains in txn.online_description.upper()
             did_check = True
 
         # if we did any of the 3 checks and they all failed, then fail
-        if did_check and not got_positive_match:            
+        if did_check and not got_positive_match:
             return False
 
         if self.memo_contains and self.memo_contains not in txn.memo.upper():
@@ -2055,9 +2053,9 @@ class DescriptionFirstWordCounter(object):
             return 1
         if self.count > other.count:
             return -1
-        if self.first_word < other.first_word:
-            return 1
         if self.first_word > other.first_word:
+            return 1
+        if self.first_word < other.first_word:
             return -1
         return 0
 

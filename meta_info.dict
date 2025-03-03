@@ -2,7 +2,7 @@
   "id" = "fix_downloaded_transactions"
   "extension_type" = "python"
   "vendor" = "Scott Maxwell"
-  "module_build" = "1000"
+  "module_build" = "1002"
   "minbuild" = "3056"
   "vendor_url" = "https://github.com/scottkmaxwell/MoneyDance-FixDownloadedTransactions"
   "module_name" = "Fix Downloaded Transactions"
