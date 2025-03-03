@@ -1872,17 +1872,20 @@ class FixerGroup(object):
 
     def add(self, fixer):
         # type: (Fixer) -> None
-        if fixer.starts_with:
-            self.starts_with.setdefault(fixer.first_word, []).append(fixer)
-        if fixer.exact_match:
-            self.exact_matches.setdefault(fixer.exact_match, []).append(fixer)
+        # contains always gets checked so it will pick up fixers that also have starts_with or exact_match
         if fixer.contains:
             self.contains.append(fixer)
-        if not fixer.starts_with and not fixer.exact_match and not fixer.contains:
-            if fixer.memo_contains:
-                self.contains.append(fixer)
-            else:
-                self.starts_with.setdefault(fixer.replacement.upper(), []).append(fixer)
+        # starts_with is less specify than exact_match so it would get picked up for fixes that also contain exact_match
+        elif fixer.starts_with:
+            self.starts_with.setdefault(fixer.first_word, []).append(fixer)
+        elif fixer.exact_match:
+            self.exact_matches.setdefault(fixer.exact_match, []).append(fixer)
+        # we only want to do the memo_contains check if the other 3 fields are empty
+        elif fixer.memo_contains:
+            self.contains.append(fixer)
+        # if none of them are set, then use replacement like starts_with
+        else:
+            self.starts_with.setdefault(fixer.replacement.upper(), []).append(fixer)
 
     def fix(self, txn, save_changes=False):
         # type: (Transaction, bool) -> bool

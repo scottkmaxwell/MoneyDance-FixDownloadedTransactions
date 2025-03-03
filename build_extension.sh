@@ -84,12 +84,14 @@ if [ $? -ne 0 ]; then
 fi
 
 echo "Zipping *.py into new mxt..."
+sed -i '' 's/^INSTALL_EXTENSION = False/INSTALL_EXTENSION = True/' "${EXTN_DIR}/${EXTN_NAME}.py"
 zip -j -z "${MXT}" "${EXTN_DIR}"/*.py <<<"${ZIP_COMMENT}"
 if [ $? -ne 0 ]; then
   echo zip -j -z "${MXT}" "${EXTN_DIR}/*.py"
   echo "*** zip *.py Failed??"
   exit 7
 fi
+sed -i '' 's/^INSTALL_EXTENSION = True/INSTALL_EXTENSION = False/' "${EXTN_DIR}/${EXTN_NAME}.py"
 
 shopt -u nullglob
 
