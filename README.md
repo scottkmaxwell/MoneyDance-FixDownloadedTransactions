@@ -23,30 +23,44 @@ Here is an example of what that file looks like, with a few additional entries
 to better illustrate some options.
 
 ```csv
-account_type,account_name,category,replacement,exact_match,starts_with,memo_contains,amount,amount_below,amount_above,skip_confirm
-CREDIT_CARD,,Automotive:Fuel,76,,,,,,,
-CREDIT_CARD,,Personal:Membership Dues,AAA Membership Renewal,,,,,,,
-CREDIT_CARD,,Personal:Donations,ACLU,,,,,,,
-CREDIT_CARD,,Vacation:Lodging,Airbnb,,,,,,,
-CREDIT_CARD,,Vacation:Travel,Alaska Air,,Alaska A,,,,,
-CREDIT_CARD,,Personal:Groceries,ALDI,,,,,,,
-CREDIT_CARD,,Personal:Clothing,Banana Republic Factory,,BR FACTORY ,,,,,
-CREDIT_CARD,,Personal:Clothing,Banana Republic Factory Online,,BR FACTORY.COM,,,,,
-CREDIT_CARD,,Vacation:Travel,Budget Rent-a-Car,,Budget Rent A Car,,,,,Y
-,Costco Anywhere Visa,Personal:Membership Dues,Costco Annual Membership Renewal,Costco Annual Membership Renewal,,,,,,
-BANK,,Tax:State Income Tax,Franchise Tax Board,,ACH CREDIT FRANCHISE TAX BD,,,,,
-BANK,,Tax:Federal Income Tax,Internal Revenue Service,,ACH CREDIT IRS TREAS,,,,,
-CREDIT_CARD,,Automotive:Fuel,Love’s,,LOVE S COUNTRY,,,,,
-CREDIT_CARD,,Automotive:Fuel,Love’s,,LOVES COUNTRY,,,,,
-CREDIT_CARD,,Personal:Dining,Outback Steakhouse,,OUTBACK #,,,,,
-,First Republic Bank,Rivian Loan,Payment,,ACH DEBIT USAA FSB,,-1534.18,,,
-,First Republic Bank,PayPal,PayPal,,ACH CREDIT PAYPAL,,,,,
-,First Republic Bank,PayPal,PayPal,,ACH DEBIT PAYPAL,,,,,
-,First Republic Bank,PayPal,PayPal,,,,,,,
-CREDIT_CARD,,Personal:Coffee Shop,Peet’s Coffee,Peet’s Coffee,PEET'S #,,,,,
-CREDIT_CARD,,Personal:Coffee Shop,Peet’s Coffee,,PEETSCOFFEE/MIGHTYLEAF,,,,,
-CREDIT_CARD,,Personal:Coffee Shop,Peet’s Coffee,,SAN PEETS COFFEE,,,,,
+account_type,account_name,category,replacement,exact_match,starts_with,contains,memo_contains,amount,amount_below,amount_above,skip_confirm
+CREDIT_CARD,,Automotive:Fuel,76,,,,,,,,
+CREDIT_CARD,,Personal:Membership Dues,AAA Membership Renewal,,,,,,,,
+CREDIT_CARD,,Personal:Donations,ACLU,,,,,,,,
+CREDIT_CARD,,Vacation:Lodging,Airbnb,,,,,,,,
+CREDIT_CARD,,Vacation:Travel,Alaska Air,,Alaska A,,,,,,
+CREDIT_CARD,,Personal:Groceries,ALDI,,,,,,,,
+CREDIT_CARD,,Personal:Clothing,Banana Republic Factory,,BR FACTORY ,,,,,,
+CREDIT_CARD,,Personal:Clothing,Banana Republic Factory Online,,BR FACTORY.COM,,,,,,
+CREDIT_CARD,,Vacation:Travel,Budget Rent-a-Car,,Budget Rent A Car,,,,,,Y
+,Costco Anywhere Visa,Personal:Membership Dues,Costco Annual Membership Renewal,Costco Annual Membership Renewal,,,,,,,
+BANK,,Tax:State Income Tax,Franchise Tax Board,,ACH CREDIT FRANCHISE TAX BD,,,,,,
+BANK,,Tax:Federal Income Tax,Internal Revenue Service,,ACH CREDIT IRS TREAS,,,,,,
+CREDIT_CARD,,Automotive:Fuel,Love’s,,LOVE S COUNTRY,,,,,,
+CREDIT_CARD,,Automotive:Fuel,Love’s,,LOVES COUNTRY,,,,,,
+CREDIT_CARD,,Personal:Dining,Outback Steakhouse,,OUTBACK #,,,,,,
+,First Republic Bank,Rivian Loan,Payment,,ACH DEBIT USAA FSB,,,-1534.18,,,
+,First Republic Bank,PayPal,PayPal,,ACH CREDIT PAYPAL,,,,,,
+,First Republic Bank,PayPal,PayPal,,ACH DEBIT PAYPAL,,,,,,
+,First Republic Bank,PayPal,PayPal,,,,,,,,
+CREDIT_CARD,,Personal:Coffee Shop,Peet’s Coffee,Peet’s Coffee,PEET'S #,,,,,,
+CREDIT_CARD,,Personal:Coffee Shop,Peet’s Coffee,,PEETSCOFFEE/MIGHTYLEAF,,,,,,
+CREDIT_CARD,,Personal:Coffee Shop,Peet’s Coffee,,SAN PEETS COFFEE,,,,,,
 ```
+
+## Required Fields
+
+The code only requires Category and Replacement, so your file could be as simple as:
+
+```csv
+category,replacement
+Automotive:Fuel,76
+Personal:Membership Dues,AAA Membership Renewal
+Personal:Donations,ACLU
+```
+
+Those would look for any transactions that start with those replacement values,
+and it would set the category and description.
 
 ## What Are We Matching?
 
@@ -75,7 +89,7 @@ prefixes that you would like to automatically remove. Do not include spaces or
 PREFIXES_TO_STRIP = {'CKE', 'EV', 'PY', 'SP', 'SQ', 'TST'}
 ```
 
-## Required(-ish) Fields
+## Fields
 
 ### `account_type` and `account_name`
 
@@ -108,17 +122,19 @@ that starts with your `replacement`.
 
 ## Columns for Specifying Matches
 
-### `exact_match` and `starts_with`
+### `exact_match`, `starts_with`, and `contains`
 
 If you set either of these, the transaction will _not_ automatically match the
 `replacement`.
 
 These do what you would expect. The `exact_match` will only match if the online
 description is exactly what you have in this column. That can be very fragile
-so you probably will prefer the `starts_with` column, which will match any
-online description that starts with what you put in that column.
+so you probably will prefer either the `starts_with` column, which will match
+any online description that starts with what you put in that column, or the
+`contains` column which will match any online description that contains what
+you put in that column.
 
-You can specify both, in which case it will match if either is true.
+You can two or three of these, in which case it will match if any condition is true.
 
 And remember that these are case-insensitive.
 
@@ -128,6 +144,9 @@ Sometimes the only way to disambiguate a transaction is with extra information
 contained in the `memo`. In my case, when I transfer money between my bank
 accounts, the description is always the same, but the last 4 digits of the
 account number is in the memo.
+
+If `exact_match`, `starts_with`, and `contains` are all empty then only the
+memo is considered.
 
 ### `amount`
 

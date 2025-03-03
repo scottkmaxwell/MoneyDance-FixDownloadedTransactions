@@ -1473,7 +1473,7 @@ def show_problems(document):
 # Extensions -> Fix Downloaded Transactions from the menu.
 # Since this extension is not signed, it must be installed whenever you restart
 # MoneyDance, so you may not find this very useful.
-INSTALL_EXTENSION = True
+INSTALL_EXTENSION = False
 
 # Location of CSV files with replacements.
 # Note: At the time of this writing, all CSVs must be in your Downloads folder
@@ -1496,10 +1496,14 @@ PREFIXES_TO_STRIP = {"CKE", "EV", "PY", "SP", "SQ", "TST"}
 # The following fields are required in each CSV file, and must be in the first
 # row of the CSV. They can be in any order.
 REQUIRED_FIELDS = {
-    "account_type",
-    "account_name",
     "category",
     "replacement",
+}
+
+OPTIONAL_FIELDS = {
+    "account_type",
+    "account_name",
+    "contains",
     "exact_match",
     "starts_with",
     "memo_contains",
@@ -1786,6 +1790,7 @@ class Fixer(object):
         replacement,
         exact_match="",
         starts_with="",
+        contains="",
         memo_contains="",
         amount=0.0,
         amount_below=0.0,
@@ -1793,12 +1798,13 @@ class Fixer(object):
         category="",
         skip_confirm=False,
     ):
-        # type: (str, str, str, str, float, float, float, str, bool) -> None
+        # type: (str, str, str, str, str, float, float, float, str, bool) -> None
         self.replacement = replacement
         if not exact_match and not starts_with and not memo_contains:
             starts_with = replacement
         self.exact_match = remove_extra_spaces(strip_prefixes(exact_match.upper()))
         self.starts_with = strip_prefixes(starts_with.upper())
+        self.contains = contains.upper()
         self.memo_contains = memo_contains.upper()
         self.amount = float(amount) if amount else 0.0
         self.amount_below = float(amount_below) if amount_below else 0.0
@@ -1808,14 +1814,28 @@ class Fixer(object):
         if category and not self.category:
             raise FixerError('Could not find category "{}"'.format(category))
 
-    def check_replacement(self, txn, check_starts_with=True):
-        # type: (Transaction, bool) -> bool
-        if check_starts_with and self.starts_with:
-            matched = txn.online_description.upper().startswith(self.starts_with) or (
+    def check_replacement(self, txn):
+        # type: (Transaction) -> bool
+        did_check = False
+        got_positive_match = False
+        if self.exact_match:
+            got_positive_match = txn.online_description.upper() == self.exact_match
+            did_check = True
+
+        if not got_positive_match and self.starts_with:
+            got_positive_match = txn.online_description.upper().startswith(self.starts_with) or (
                 self.exact_match and txn.online_description.upper() == self.exact_match
             )
-            if not matched:
-                return False
+            did_check = True
+
+        if not got_positive_match and self.contains:            
+            got_positive_match = self.contains in txn.online_description.upper()
+            did_check = True
+
+        # if we did any of the 3 checks and they all failed, then fail
+        if did_check and not got_positive_match:            
+            return False
+
         if self.memo_contains and self.memo_contains not in txn.memo.upper():
             return False
         if self.amount and txn.amount != self.amount:
@@ -1826,9 +1846,9 @@ class Fixer(object):
             return False
         return True
 
-    def fix(self, txn, save_changes=False, check_starts_with=True):
-        # type: (Transaction, bool, bool) -> bool
-        if not self.check_replacement(txn, check_starts_with):
+    def fix(self, txn, save_changes=False):
+        # type: (Transaction, bool) -> bool
+        if not self.check_replacement(txn):
             return False
         txn.description = self.replacement
         if self.confirm:
@@ -1850,28 +1870,31 @@ class FixerGroup(object):
         # type: () -> None
         self.exact_matches = {}  # type: Dict[str, List[Fixer]]
         self.starts_with = {}  # type: Dict[str, List[Fixer]]
-        self.memo_contains = []  # type: List[Fixer]
+        self.contains = []  # type: List[Fixer]
 
     def add(self, fixer):
         # type: (Fixer) -> None
         if fixer.starts_with:
             self.starts_with.setdefault(fixer.first_word, []).append(fixer)
-            if not fixer.exact_match:
-                self.exact_matches.setdefault(fixer.replacement.upper(), []).append(fixer)
         if fixer.exact_match:
             self.exact_matches.setdefault(fixer.exact_match, []).append(fixer)
-        if fixer.memo_contains and not fixer.starts_with and not fixer.exact_match:
-            self.memo_contains.append(fixer)
+        if fixer.contains:
+            self.contains.append(fixer)
+        if not fixer.starts_with and not fixer.exact_match and not fixer.contains:
+            if fixer.memo_contains:
+                self.contains.append(fixer)
+            else:
+                self.starts_with.setdefault(fixer.replacement.upper(), []).append(fixer)
 
     def fix(self, txn, save_changes=False):
         # type: (Transaction, bool) -> bool
         for possible in self.exact_matches.get(txn.online_description.upper(), []):
-            if possible.fix(txn, save_changes=save_changes, check_starts_with=False):
+            if possible.fix(txn, save_changes=save_changes):
                 return True
         for possible in self.starts_with.get(txn.first_word, []):
             if possible.fix(txn, save_changes=save_changes):
                 return True
-        for possible in self.memo_contains:
+        for possible in self.contains:
             if possible.fix(txn, save_changes=save_changes):
                 return True
         return False
@@ -1907,6 +1930,14 @@ class FixerCollection(object):
                     "Error",
                 )
                 continue
+            unknown_fields = set(field_names) - REQUIRED_FIELDS - OPTIONAL_FIELDS
+            if unknown_fields:
+                myPopupInformationBox(
+                    None,
+                    "CSV has the following unknown fields: {}".format(", ".join(unknown_fields)),
+                    "Error",
+                )
+                continue
             for line in lines[1:]:
                 kwargs = dict(zip(field_names, line.split(",")))
                 try:
@@ -1939,6 +1970,7 @@ class FixerCollection(object):
         replacement,
         exact_match="",
         starts_with="",
+        contains="",
         memo_contains="",
         amount=0.0,
         amount_above=0.0,
@@ -1947,13 +1979,15 @@ class FixerCollection(object):
         skip_confirm=False,
         account_type="",
         account_name="",
+        **kwargs  # ignore extra fields
     ):
-        # type: (str, str, str, str, float, float, float, str, bool, str, str) -> None
+        # type: (str, str, str, str, str, float, float, float, str, bool, str, str, **str) -> None
         cls.add(
             Fixer(
                 replacement,
                 exact_match=exact_match,
                 starts_with=starts_with,
+                contains=contains,
                 memo_contains=memo_contains,
                 amount=amount,
                 amount_above=amount_above,

@@ -1,9 +1,9 @@
-account_type,account_name,category,replacement,exact_match,starts_with,memo_contains,amount,amount_below,amount_above,skip_confirm
-CREDIT_CARD,,Automotive:Fuel,76,,,,,,,
-CREDIT_CARD,,Personal:Membership Dues,AAA Membership Renewal,,,,,,,
-CREDIT_CARD,,Vacation:Lodging,Airbnb,,,,,,,
-CREDIT_CARD,,Vacation:Travel,Alaska Air,,Alaska A,,,,,
-CREDIT_CARD,,Personal:Groceries,Vons,,,,,,,
-CREDIT_CARD,,Vacation:Travel,Budget Rent-a-Car,,Budget Rent A Car,,,,,Y
-BANK,,Tax:State Income Tax,Franchise Tax Board,,ACH CREDIT FRANCHISE TAX BD,,,,,
-BANK,,Tax:Federal Income Tax,Internal Revenue Service,,ACH CREDIT IRS TREAS,,,,,
+account_type,account_name,category,replacement,exact_match,starts_with,contains,memo_contains,amount,amount_below,amount_above,skip_confirm
+CREDIT_CARD,,Automotive:Fuel,76,,,,,,,,
+CREDIT_CARD,,Personal:Membership Dues,AAA Membership Renewal,,,,,,,,
+CREDIT_CARD,,Vacation:Lodging,Airbnb,,,,,,,,
+CREDIT_CARD,,Vacation:Travel,Alaska Air,,Alaska A,,,,,,
+CREDIT_CARD,,Personal:Groceries,Vons,,,,,,,,
+CREDIT_CARD,,Vacation:Travel,Budget Rent-a-Car,,Budget Rent A Car,,,,,,Y
+BANK,,Tax:State Income Tax,Franchise Tax Board,,ACH CREDIT FRANCHISE TAX BD,,,,,,
+BANK,,Tax:Federal Income Tax,Internal Revenue Service,,ACH CREDIT IRS TREAS,,,,,,
