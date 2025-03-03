@@ -1611,6 +1611,8 @@ class Transaction(object):
     _original_category = None
     _description = None
     _original_description = None
+    _original_dateint = None
+    _dateint = 0
     _is_new = None
     _original_is_new = None
 
@@ -1649,7 +1651,16 @@ class Transaction(object):
     @property
     def dateint(self):
         # type: () -> int
-        return self._txn.getDateInt()
+        if self._original_dateint is None:
+            self._original_dateint = self._txn.getDateInt()
+            self._dateint = self._original_dateint
+        return self._dateint
+
+    @dateint.setter
+    def dateint(self, value):
+        # type: (int) -> None
+        if self.dateint != value:
+            self._dateint = value
 
     @property
     def description(self):
@@ -1668,7 +1679,8 @@ class Transaction(object):
     @property
     def online_description(self):
         # type: () -> str
-        return remove_extra_spaces(strip_prefixes(self._txn.getOriginalOnlineTxn().getName()))
+        original_online = self._txn.getOriginalOnlineTxn()
+        return remove_extra_spaces(strip_prefixes(original_online.getName())) if original_online else ""
 
     @property
     def first_word(self):
@@ -1691,7 +1703,7 @@ class Transaction(object):
         if self._original_is_new is None:
             self._original_is_new = self._txn.isNew()
             self._is_new = self._original_is_new
-        return self._is_new
+        return bool(self._is_new)
 
     @is_new.setter
     def is_new(self, value):
@@ -1707,7 +1719,7 @@ class Transaction(object):
         return self._memo
 
     def sync(self):
-        # type: () -> None
+        # type: () -> bool
         needs_sync = False
         self._txn.setEditingMode()  # SCB
         if self._description != self._original_description:
@@ -1718,12 +1730,18 @@ class Transaction(object):
             self._txn.setEditingMode()  # SCB
             self._txn.setIsNew(self._is_new)
             needs_sync = True
+        if self._dateint != self._original_dateint:
+            self._txn.setEditingMode()  # SCB
+            self._txn.setDateInt(self._dateint)
+            needs_sync = True
         if self._original_category != self._category:
             self._txn.setEditingMode()  # SCB
             self._txn.getSplit(0).setAccount(self._category)
             needs_sync = True
         if needs_sync:
             self._txn.getParentTxn().syncItem()
+            return True
+        return False
 
     def __str__(self):
         # type: () -> str
@@ -2268,6 +2286,46 @@ class FixDownloadedTransactionsExtension(object):
             for account in sorted(self.account_names_by_type.get(account_type, [])):
                 myPrint("B", "- Account: {}".format(account))
 
+    @staticmethod
+    def _find_automated_payments(transaction, from_accounts, to_accounts):
+        # type (List[Transaction], Set[str], Set[str]) -> Generator[Transaction]:
+        for txn in transaction:
+            if str(txn.account) in from_accounts and str(txn.category) in to_accounts:
+                yield txn
+
+    def _fix_cc_payments(self, transactions):
+        # type: (List[Transaction]) -> list[Transaction]
+
+        result = []  # type: List[Transaction]
+
+        # Get the list of bank and CC accounts
+        bank_accounts = self.account_names_by_type.get(AccountType.BANK, set())
+        credit_card_accounts = self.account_names_by_type.get(AccountType.CREDIT_CARD, set())
+        if not bank_accounts or not credit_card_accounts:
+            return result
+
+        # Find all the CC transactions paid by bank account and save them in a dict
+        # where key is (bank_account_name, dateint, payment_amount (negated)
+        cc_payments = {}  # type: dict[tuple[str, float], list[tuple[int, Transaction]]]
+        for txn in self._find_automated_payments(transactions, credit_card_accounts, bank_accounts):
+            cc_payments.setdefault((str(txn.category), -txn.amount), []).append((txn.dateint, txn))
+        if cc_payments:
+            for txn in transactions:
+                if not txn.is_new or str(txn.account) not in bank_accounts:
+                    continue
+                matches = [item for item in cc_payments.get((str(txn.account), txn.amount), []) if abs(item[0] - txn.dateint) < 6]
+                if matches and len(matches) == 1:
+                    cc_dateint, cc_txn = matches[0]
+                    if txn.category != cc_txn.account:
+                        txn.category = cc_txn.account
+                    if txn.description == txn.online_description:
+                        txn.description = "Automatic Payment"
+                    if txn.dateint != cc_dateint:
+                        txn.dateint = cc_dateint
+                    if txn.sync():
+                        result.append(txn)
+        return result
+
     def _process_transactions(self, account_types, commit_changes=False):
         # type: (Tuple[str, ...], bool) -> Tuple[List[Transaction], DescriptionContainer]
         all_parented_transactions = list(self.get_unreconciled_for_account_types(*account_types))
@@ -2284,6 +2342,8 @@ class FixDownloadedTransactionsExtension(object):
             return modified_transactions, unmodified
 
         self.set_status("Analyzing {} transactions".format(len(all_parented_transactions)))
+
+        modified_transactions.extend(self._fix_cc_payments(all_parented_transactions))
 
         for txn in all_parented_transactions:
             fixed = FixerCollection.fix(txn, save_changes=commit_changes)
